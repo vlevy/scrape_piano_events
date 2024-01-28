@@ -9,7 +9,7 @@ opts = Options()
 opts.binary_location = 'C:\Program Files (x86)\Google\Chrome\Application\chrome.exe'
 
 # Set the location of the webdriver
-chrome_driver = PurePath('../Utilities', 'chromedriver.exe').joinpath()
+chrome_driver = PurePath('./Utilities', 'chromedriver.exe').joinpath()
 
 # Instantiate a webdriver
 driver = webdriver.Chrome(options=opts, executable_path=chrome_driver)

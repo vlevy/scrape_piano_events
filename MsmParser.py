@@ -3,9 +3,13 @@ import os
 import re
 import datetime as dt
 
-from parser_common_code import set_start_end_fields_from_start_dt, initialize_csv_dict
+from parser_common_code import set_start_end_fields_from_start_dt, initialize_csv_dict, set_tags_from_dict, any_match
 
 from EventParser import EventParser
+
+COLLABORATIVE_HINTS = (
+    'precollege-performances',
+)
 
 class MsmParser(EventParser):
     """
@@ -44,6 +48,8 @@ class MsmParser(EventParser):
         title_venue = event_venue
         csv_dict['event_name'] = f'{event_name}, at {title_venue}'
 
+        if any_match(COLLABORATIVE_HINTS, url):
+            csv_dict['relevant'] = True
 
         #----------------------------------------------------------------
         # Description

@@ -11,11 +11,13 @@ from EventParser import EventParser
 venue_translations = {
     'Alice Tully Hall': 'Alice Tully Hall at Lincoln Center',
     'Alice Tully Hall, Hauser Patron Salon': 'Alice Tully Hall at Lincoln Center',
+    'The Cathedral Church of St. John the Divine': 'Cathedral of St. John the Divine',
     'Claire Tow Theater': None,
     'Clark Studio Theater': None,
     'Daniel & Joanna S. Rose Studio': 'Daniel and Joanna S. Rose Studio at Lincoln Center',
     'Daniel and Joanna S. Rose Studio': 'Daniel and Joanna S. Rose Studio at Lincoln Center',
     'David Geffen Hall': 'David Geffen Hall at Lincoln Center',
+    'Kenneth C. Griffin Sidewalk Studio, David Geffen Hall': 'David Geffen Hall at Lincoln Center',
     'David H. Koch Theater': None,
     'David Rubenstein Atrium': 'David Rubenstein Atrium at Lincoln Center',
     'David Rubenstein Atrium at Lincoln Center': None,
@@ -23,6 +25,7 @@ venue_translations = {
     'Dizzy\'s Club': 'Dizzy\'s Club Coca-Cola',
     'Francesca Beale Theater': None,
     'Gerald W. Lynch Theater at John Jay College': None,
+    'Merkin Hall': 'Merkin Concert Hall at Kaufman Music Center',
     'Metropolitan Opera House': None,
     'Mitzi E. Newhouse Theater': None,
     'Paul Recital Hall': 'Juilliard School',
@@ -46,6 +49,7 @@ venue_translations = {
     'Vivian Beaumont Theater': None,
     'Walter Reade Theater': 'Walter Reade Theater at Lincoln Center',
     'Weill Recital Hall at Carnegie Hall': 'Carnegie Hall',
+    'Wu Tsai Theater, David Geffen Hall': 'David Geffen Hall at Lincoln Center',
 }
 
 
@@ -91,7 +95,7 @@ class LincolnCenterParser(EventParser):
         # Venue
         event_venue = None
         try:
-            event_venue = soup.find('h2', attrs={'class': 'eventDetailsReskin22__details-description'}).contents[0]
+            event_venue = soup.find('h2', attrs={'class': 'eventDetailsReskin22__details-description'}).contents[0].strip()
         except Exception as ex:
             pass
         if not event_venue:
@@ -108,7 +112,12 @@ class LincolnCenterParser(EventParser):
         csv_dict['event_name'] = f'{event_name}, at {title_venue}'
         # Event description other than performers and program
         description_lines = []
-        description_lines.append(str(soup.find('p', attrs={'class': 'event-detail-header-text-description'}).contents[0]))
+        try:
+            description_lines.append(str(soup.find('p', attrs={'class': 'event-detail-header-text-description'}).next.contents[0]))
+        except Exception as ex:
+            print(f'Unable to get the description, skipping')
+            return None
+
         festival_link = soup.find('p', attrs={'class': 'festival-link-text'})
         if festival_link:
             description_lines.append(str(festival_link.contents[0]))
@@ -120,7 +129,7 @@ class LincolnCenterParser(EventParser):
             lefts = [f'<strong>{str(l.contents[0])}</strong>' if l.contents else None for l in left_html]
             lefts = list(filter(lambda x: x is not None, lefts))
             right_html = soup.find_all(elem_right, attrs={'class': class_right})
-            rights = [str(r.contents[0]) for r in right_html]
+            rights = [str(r.contents[0]) if r.contents else None for r in right_html]
             if lefts and rights:
                 lines = [f'{l} {r}' for l, r in zip(lefts, rights)]
             return lines

@@ -1,12 +1,25 @@
 from datetime import datetime
 import json
 from parser_common_code import parse_url_to_soup, initialize_csv_dict, set_start_end_fields_from_start_dt, \
-    set_tags_from_dict
+    set_tags_from_dict, any_match
 from EventParser import EventParser
 
 VENUE_TRANSLATIONS = {
     'Merkin Concert Hall': 'Merkin Concert Hall at Kaufman Music Center',
+    'Merkin Hall': 'Merkin Concert Hall at Kaufman Music Center',
 }
+
+COLLABORATIVE_HINTS = (
+    'young-concert-artists-risa-hokamura-violin',
+    'ukrainian-contemporary-music-festival-tribute-to-boris',
+    'tuesday-matinees-kevin-zhu-violin',
+    'new-york-philharmonic-ensembles',
+    'asiya-korepanova-concert-pianist',
+    'fast-forward-henry-schneider-concert',
+    'fast-forward-chamberfest-2023',
+    'contemporary-festival-2023',
+    'kaufman-music-center-concerto-competition',
+)
 
 LIVE_READ = False
 
@@ -64,6 +77,10 @@ class KaufmanParser(EventParser):
         event_name_from_page = event_json['name']
         event_name = f'{event_name_from_page}, at {venue}'
         csv_dict['event_name'] = event_name
+
+        # Special exemptions
+        if any_match(COLLABORATIVE_HINTS, url):
+            csv_dict['relevant'] = True
 
         # Date and time
         # Sunday | November 25 2018 | 6 pm

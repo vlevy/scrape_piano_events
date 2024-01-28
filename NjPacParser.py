@@ -48,14 +48,18 @@ class NjPacParser(EventParser):
                 try:
                     datetime_str = str([c for c in dl][1].contents[0].split(', ')[1])
                 except Exception as ex:
-                    def prep_when_field(field):
-                        return str(soup.find('span', attrs={'class': field}).contents[0]).replace(',', '').strip()
-                    month = prep_when_field('m-date__month') # 'Jan'
-                    day = prep_when_field('m-date__day')
-                    year = prep_when_field('m-date__year')
-                    time_str = prep_when_field('time') # 8:30 pm
-                    datetime_str = f'{month} {day} {year} {time_str}' # 'Jan 25 2020 7:30 pm'
-                    start_dt = dt.datetime.strptime(datetime_str, '%b %d %Y %I:%M %p')
+                    try:
+                        def prep_when_field(field):
+                            return str(soup.find('span', attrs={'class': field}).contents[0]).replace(',', '').strip()
+                        month = prep_when_field('m-date__month') # 'Jan'
+                        day = prep_when_field('m-date__day')
+                        year = prep_when_field('m-date__year')
+                        time_str = prep_when_field('time') # 8:30 pm
+                        datetime_str = f'{month} {day} {year} {time_str}' # 'Jan 25 2020 7:30 pm'
+                        start_dt = dt.datetime.strptime(datetime_str, '%b %d %Y %I:%M %p')
+                    except Exception as ex:
+                        print(f"Unable to parse date")
+                        return None
             if start_dt is None:
                 start_dt = dt.datetime.strptime(datetime_str, '%m/%d/%y @ %I:%M%p')
             if dl and len(dl.find_all('dt')) > 1:

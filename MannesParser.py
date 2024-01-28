@@ -13,16 +13,24 @@ venue_map = {
     'Alice Tully Hall, Lincoln Center': 'Alice Tully Hall at Lincoln Center',
     'Alice Tully Hall at Lincoln Center': 'Alice Tully Hall at Lincoln Center',
     'Albert and Vera List Academic Center': 'The New School, Albert and Vera List Academic Center',
+    'Alvin Johnson/J.M. Kaplan Hall': 'Alvin Johnson/J.M. Kaplan Hall',
     'Anna-Maria and Stephen Kellen Gallery, Sheila C. Johnson Design Center': 'Anna-Maria and Stephen Kellen Gallery at Parsons School of Design',
+    'Arnhold Hall': 'Arnhold Hall at the New School',
+    'Arnhold Hall, Glassbox Theater': 'Arnhold Hall at the New School',
     'Baisley Powell Elebash Recital Hall, Arnold Hall': 'Arnhold Hall at the New School',
+    'Baisley Powell Elebash Recital Hall': 'Arnhold Hall at the New School',
+    'Baisley Powell Elebash Recital Hall (Room 750)': 'Arnhold Hall at the New School',
     'Bohemian National Hall': 'Bohemian National Hall',
     'Consulate General of Poland': 'Consulate General of Poland',
     'Consulate of the Federal Republic of Germany': 'Consulate General of Germany',
+    'Ernst C. Stiefel Concert Hall': 'Arnhold Hall at the New School',
+    'Ernst C. Stiefel Hall at Arnhold Hall': 'Arnhold Hall at the New School',
     'Eugene Lang College of Liberal Arts at The New School': 'Eugene Lang College of Liberal Arts at The New School',
     'Gerald W. Lynch Theater at John Jay College': 'Gerald W. Lynch Theater at John Jay College',
     'Gerald W. Lynch Theater': 'Gerald W. Lynch Theater at John Jay College',
     'Gerald W Lynch Theater': 'Gerald W. Lynch Theater at John Jay College',
     'German Consulate General, New York': 'Consulate General of Germany',
+    'Glassbox Theater': 'Arnhold Hall at the New School',
     'House of the Redeemer': 'House of the Redeemer',
     'Klein Conference Room, Room A510, Alvin Johnson/J.M. Kaplan Hall': 'Alvin Johnson/J.M. Kaplan Hall',
     'Madison Avenue Presbyterian Church': 'Madison Avenue Presbyterian Church',
@@ -75,82 +83,49 @@ class MannesParser(EventParser):
         csv_dict['organizer_name'] = 'Mannes College of Music'
         event_tags = ['Classical', 'Mannes']
 
-        # Pull out the Google event information
-        try:
-            google_cal = soup.find('a', attrs={'class': 'fa-google'})['href']
-            google_cal = urllib.parse.unquote(google_cal)
-            google_cal_dict = dict([(p.split('=')[0], (p.split('=')[1])) for p in google_cal.split('&')
-                                    if len(p.split('=')) == 2][1:])
-        except Exception as ex1:
-            # Google Event Annotation
-            try:
-                json_text = soup.find('script', attrs={'type': 'application/ld+json'}).contents[0]
-                google_cal_dict = json.loads(json_text)
-            except Exception as ex2:
-                print('No Google event annotation found, skipping event.')
-                return None
-
         # Venue
         try:
-            venue_name = google_cal_dict['location'].replace('+', ' ').strip()
+            venue_from_page = str(soup.find_all('div', attrs={'class': 'venue-name'})[0].contents[0])
         except Exception as ex:
-            venue_name = google_cal_dict['location']['name']
+            print('Error: Venue not found')
+            return dict()
 
-        if  'arnhold' in venue_name.lower() or 'stiefel' in venue_name.lower():
-            venue_name = 'Arnhold Hall at the New School'
-        elif 'tishman' in venue_name.lower():
-            venue_name = 'John L. Tishman Auditorium, University Center'
-        elif 'glassbox' in venue_name.lower() or 'glass box' in venue_name.lower():
-            venue_name = 'Glass Box Performance Space at the New School'
-
-        location_venue = venue_map.get(venue_name, None) or venue_title_map[venue_name]
-        try:
-            title_venue = venue_title_map[location_venue]
-        except Exception as ex:
-            raise
-        csv_dict['venue_name'] = location_venue
+        venue_name = venue_map[venue_from_page]
+        csv_dict['venue_name'] = venue_name
 
         # Event name
+        event_name = str(soup.find('title').contents[0])
+        title_venue = venue_title_map[venue_name]
+
+        event_name = f'Mannes Student Recital: {event_name}'
+        if is_pianyc_related_as_accompanied(event_name):
+            event_name += ' with Collaborative Piano'
+
+        if title_venue != 'The New School':
+            event_name += f', at {title_venue}'
+        csv_dict['event_name'] = event_name
+
+        # Generic Mannes School image
+        csv_dict['external_image_url'] = 'https://collegegazette.com/wp-content/uploads/2021/09/Mannes-School-of-Music-625x420.jpg'
+
+        # When
+        month_str = soup.find('div', class_='date-month').text.strip()
+        day_str = soup.find_all('div', class_='date-day')[-1].text.strip()
+        year_str = soup.find('div', class_='date-year').text.strip()
+        time_str = soup.find('div', class_='date-time').text.strip()
+        date_str = f'{month_str} {day_str} {year_str} {time_str}'
         try:
-            event_name = str(soup.find('title').contents[0])
+            event_datetime = dt.datetime.strptime(date_str, "%B %d %Y %I:%M%p")
         except Exception as ex:
-            google_cal_dict['name']
+            print(f'Unable to parse event time from {date_str}')
+            return dict()
 
-        csv_dict['event_name'] = f'{event_name}, at {title_venue}'
-
-        # Date and time: '20191117T190000Z/20191117T213000Z'
-        try:
-            google_calendar_href = soup.find('a', attrs={'class': 'tns_events_cta'})['href']
-
-            date_index = google_calendar_href.find('dates=') + 6
-            utc_dates_string = google_calendar_href[date_index: date_index + 33]
-            if utc_dates_string[16] == '/':
-                # Both start and end dates, e.g., '20191117T190000Z/20191117T213000Z'
-                utc_dates = utc_dates_string.split('/')
-                try:
-                    start_dt = utc_to_local(dt.datetime.strptime(utc_dates[0], '%Y%m%dT%H%M%SZ'))
-                    end_dt   = utc_to_local(dt.datetime.strptime(utc_dates[1], '%Y%m%dT%H%M%SZ'))
-                except Exception as ex:
-                    raise
-            else:
-                # Single start date, e.g., '20190916T233000Z'
-                start_dt = utc_to_local(dt.datetime.strptime(utc_dates_string[0:16], '%Y%m%dT%H%M%SZ'))
-                end_dt = None
-        except Exception as ex:
-            start_string = google_cal_dict['startDate']
-            end_string = google_cal_dict['endDate']
-            start_dt = dt.datetime.strptime(start_string[:-6], '%Y-%m-%dT%H:%M:%S')
-            end_dt = dt.datetime.strptime(end_string[:-6], '%Y-%m-%dT%H:%M:%S')
-
-        set_start_end_fields_from_start_dt(csv_dict, start_dt, end_dt)
+        set_start_end_fields_from_start_dt(csv_dict, event_datetime)
 
         # Event description
-        try:
-            paragraphs = [str(p) for p in soup.find('div', attrs={'class': ('vht')})]
-            description = ''.join(paragraphs)
-        except Exception as ex:
-            description = google_cal_dict['description']
-
+        # Temporary
+        description = soup.find('title').contents[0].text
+        description = f'{description}\n\n\nTo attend this event, it\'s necessary to <a href="{url}">register here</a>.'
         csv_dict['event_description'] = description
 
         # Relevant
@@ -159,24 +134,8 @@ class MannesParser(EventParser):
         csv_dict['relevant'] = relevant
 
         # Price
-        try:
-            json_script = str([s.contents[0] for s in soup.find_all('script')
-                               if s.contents and s.contents[0].find('ticket_cost:') >= 0][0])
-            cost_string = re.search('\"(.+?)\"', json_script[json_script.find('ticket_cost'):]).groups()[0]
-            sorted_prices = sorted([int(p.replace('$', '')) for p in re.findall('\$\d+', cost_string)])
-            if 'free' in cost_string.lower():
-                sorted_prices.insert(0, 0)
-                sorted_prices = list(set(sorted_prices))
-            if len(sorted_prices) == 1:
-                price_string = f'{sorted_prices[0]}'
-            elif len(sorted_prices) > 1:
-                price_string = f'{sorted_prices[0]}-{sorted_prices[-1]}'
-            else:
-                price_string = ''
-        except Exception as ex:
-            print('No cost found')
-            # Assume it's free
-            price_string = '0'
+        # TODO: Assume it's free
+        price_string = '0'
 
         csv_dict['event_cost'] = price_string
 
@@ -191,14 +150,5 @@ class MannesParser(EventParser):
         set_tags_from_dict(csv_dict, event_tags)
 
         # Image URL
-        try:
-            image_url = str(soup.find('meta', attrs={'name': 'og:image'})['content'])
-        except Exception as ex:
-            style = str(soup.find('div', attrs={'class': 'set-as-event-image'})['style'])
-            image_url = re.search("background-image:url\('(.+)'", style).groups()[0]
-            if image_url.startswith('//'):
-                image_url = f'https:{image_url}'
-
-        csv_dict['external_image_url'] = image_url
 
         return csv_dict

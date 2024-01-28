@@ -1,16 +1,19 @@
 import json
 from datetime import datetime
 
-from parser_common_code import serve_urls_from_file, initialize_csv_dict, set_start_end_fields_from_start_dt, \
-    parse_event_tags
-
 from EventParser import EventParser
+from parser_common_code import (
+    initialize_csv_dict,
+    parse_event_tags,
+    serve_urls_from_file,
+    set_start_end_fields_from_start_dt,
+)
 
 VENUE_TRANSLATIONS = {
     'The 92nd Street Y, New York': '92nd Street Y',
 }
 
-class NinetySecondsStreetYParser(EventParser):
+class NinetySecondStreetYParser(EventParser):
 
     def parse_soup_to_event(self, url, soup):
         # -----------------------------------

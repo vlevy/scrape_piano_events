@@ -19,6 +19,7 @@ VENUE_TRANSLATIONS = {
     'Cathedral of St. John the Divine': None,
     'The Cathedral Church of St. John the Divine': 'Cathedral of St. John the Divine',
     'Chelsea Factory': None,
+    "Christ and St. Stephen's Church": "Christ & St. Stephen's Episcopal Church",
     'Corpus Christi Church': None,
     'Damrosch Park': 'skip',
     'David Geffen Hall': 'Lincoln Center',
@@ -29,9 +30,11 @@ VENUE_TRANSLATIONS = {
     'Holy Trinity Lutheran Church': None,
     'Kaufman Dance Studio': 'the Juilliard School',
     'Lippes Concert Hall in Slee Hall, SUNY': 'skip',
+    'Livestream': 'skip',
     'Madison Avenue Presbyterian Church': None,
     'Marble Collegiate Church': None,
     'Mary Seaton Room at Kleinhans Music Hall': 'skip',
+    'Merkin Hall': 'Merkin Concert Hall at Kaufman Music Center',
     'Morse Hall': 'the Juilliard School',
     'Morse Recital Hall': 'Morse Hall',
     'National Sawdust': 'skip',
@@ -39,11 +42,13 @@ VENUE_TRANSLATIONS = {
     'Peter Jay Sharp Theater': 'the Juilliard School',
     'Rm 305': 'the Juilliard School',
     'Rm 305 - Ellen and James S. Marcus Vocal Arts Studio': 'the Juilliard School',
+    'Room 305 - Ellen and James Marcus Vocal Arts Studio': 'the Juilliard School',
     'Rm 309 - Bruno Walter Orchestral Studio': 'the Juilliard School',
     'Rm 340 - Jazz Studio': 'the Juilliard School',
     'Rm 543 - Harris/Woolfson Orchestral Studio': 'the Juilliard School',
     'Rosemary and Meredith Willson Theater': 'the Juilliard School',
     'Saint Michael’s Church': 'St. Michael’s Church',
+    'Saint Thomas Church': "Saint Thomas Church Fifth Avenue",
     'Streaming Event': None,
     'St. Bartholomew\'s Episcopal Church': 'St. Barts Park Avenue',
     'Stephanie P. McClelland Drama Theater': 'the Juilliard School',
@@ -51,9 +56,11 @@ VENUE_TRANSLATIONS = {
     'The Bruno Walter Auditorium':  'Bruno Walter Auditorium',
     'The Charles Engelhard Court at The Metropolitan Museum of Art': 'Metropolitan Museum of Art',
     'The Morgan Library & Museum': 'The Morgan Library and Museum',
+    'The Church of Saint Mary the Virgin': 'The Church of Saint Mary the Virgin',
     'Venue Display Name': 'the Juilliard School',
     'Weill Recital Hall': 'Carnegie Hall',
     'Weill Recital Hall at Carnegie Hall': 'Carnegie Hall',
+    'Woolsey Hall at Yale University': 'skip',
 }
 
 
@@ -68,7 +75,7 @@ class JuilliardParser(EventParser):
             # Parses to ('image', 'png', 'eYF57vEs')
             # https://www.juilliard.edu/sites/default/files/styles/wide_event_1270x715_with_focal_point/public/events/jsq_rotator_2400x1350_a1_1.jpeg?h=d1cb525d&itok=lOxJPJde
             # Parses to ('image', 'png', 'eYF57vEs')
-            stem, ext, token = re.search('([a-zA-z0-9_]+)\.(JPG|JPEG|PNG|jpg|jpeg|png)\?itok=(.{8})', image_url).groups()
+            stem, ext, token = re.search('([a-zA-Z0-9_]+)\.(JPG|JPEG|PNG|jpg|jpeg|png)\?itok=(.{8})', image_url).groups()
             image_file_name = f'{stem}_{token}.{ext}'
             folder = 'Juilliard'
         except Exception as ex:
@@ -109,7 +116,7 @@ class JuilliardParser(EventParser):
             venue_from_page = ''
         venue = VENUE_TRANSLATIONS[venue_from_page] or venue_from_page
         if venue == 'skip':
-            print(f'Skipping out-of-town event at "{venue_from_page}"')
+            print(f'Skipping event at "{venue_from_page}"')
             return None
         if venue.startswith('the '):
             # Strip off leading 'the'
@@ -123,9 +130,12 @@ class JuilliardParser(EventParser):
         # -----------------------------------
 
         # Date/time example: '2019-09-19 19:30:00'
-        when_start = str(soup.find('var', attrs={'class': 'atc_date_start'}).contents[0]).strip()
-        event_dt = dt.datetime.strptime(when_start.strip(), '%Y-%m-%d %H:%M:%S')
-        set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
+        try:
+            when_start = str(soup.find('var', attrs={'class': 'atc_date_start'}).contents[0]).strip()
+            event_dt = dt.datetime.strptime(when_start.strip(), '%Y-%m-%d %H:%M:%S')
+            set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
+        except Exception as ex:
+            print(f"Unable to parse event start time: {ex}")
 
         # -----------------------------------
         # Image URL
@@ -150,7 +160,12 @@ class JuilliardParser(EventParser):
         # Event description
         # -----------------------------------
         relevant = is_pianyc_related(event_name_from_page) or \
-                   is_pianyc_related_as_accompanied(event_name_from_page)
+                   is_pianyc_related_as_accompanied(event_name_from_page) or \
+                   event_name_from_page == 'Pre-College Faculty Recital' or \
+                   any_match(('MAP Student Recital', 'MAP Chamber', 'Chamber Music Recital',
+                              'Honors Chamber Music', 'Ensemble Connect', 'Chamberfest', 'Vocal Arts'),
+                             event_name_from_page)
+
         event_description_rows = [event_name_from_page, ]
         subtitle = soup.find('div', attrs={'class': 'field--name-field-subtitle'})
         if subtitle:
@@ -214,9 +229,10 @@ class JuilliardParser(EventParser):
         if match:
             student = match.groups()[0]
             instrument = match.groups()[1]
-            if instrument.lower().strip() == 'piano':
-                # Piano is implied
-                instrument = None
+            if False:
+                if instrument.lower().strip() == 'piano':
+                    # Piano is implied
+                    instrument = None
         else:
             student = None
             instrument = None
@@ -226,30 +242,27 @@ class JuilliardParser(EventParser):
         event_text = ' '.join((event_name_from_page, description_html))
         parse_event_tags(csv_dict, event_tags, event_text)
 
-        # Just forget about pre-college non-keyboard recitals
-        if is_precollege and not is_pianyc_related(event_name_from_page):
-            print('Skipping non-keyboard pre-college event')
-            return None
+        if False:
+            # Forget about pre-college non-keyboard recitals
+            if is_precollege and not is_pianyc_related(event_name_from_page):
+                print(f'Info: Non-keyboard pre-college event {event_name_from_page}')
+                return None
 
         # Finalize some fields
-        if student and not instrument:
-            # Relevancy is implied
-            if is_precollege:
-                csv_event_name = f'Juilliard Pre-College Recital: {student}'
-                event_tags.append('Young Performer')
-            else:
-                csv_event_name = f'Juilliard Student Recital: {student}'
-        elif student and instrument:
+        if student and instrument:
             if instrument.lower() == 'pianos':
                 # Two pianos!
                 csv_event_name = f'Juilliard Student Recital: {student}, {instrument}'
                 event_tags += ['Ensemble', 'Four Hand', 'Pure Keyboard']
             elif relevant and instrument.lower() not in (
-                'harpsichord', 'fortepiano', 'organ', 'collaborative piano', 'jazz piano'):
-                performer_type = 'Student' if 'Faculty Recital' not in event_tags else 'Faculty'
+                'piano', 'harpsichord', 'fortepiano', 'organ', 'collaborative piano', 'jazz piano'):
+                if 'Faculty Recital' in event_tags:
+                    performer_type = 'Faculty'
+                else:
+                    performer_type = 'Student'
                 csv_event_name = f'Juilliard {performer_type} Recital: {student}, {instrument} with Collaborative Piano'
             else:
-                # Unusual -- probably piano duo or organ; may not get a listing
+                # Unusual -- possibly piano duo, collaborative, organ or harpsichord
                 csv_event_name = f'Juilliard Student Recital: {student}, {instrument}'
         elif is_precollege and \
                 is_pianyc_related(event_name_from_page) and \
@@ -319,16 +332,13 @@ class JuilliardParser(EventParser):
             csv_event_name = f'{event_name_from_page}, at {venue}'
         else:
             # Not at Juilliard and not solo and not pre-college
-            if 'Juilliard' in event_name_from_page:
+            if 'Juilliard' in event_name_from_page or 'Juilliard' in venue:
                 csv_event_name = f'{event_name_from_page}, at {venue}'
             else:
                 csv_event_name = f'Juilliard {event_name_from_page}, at {venue}'
 
-        if 'MAP Student Recital' in event_name_from_page:
-            """
-            Juilliard's Music Advancement Program (MAP) educates music students ages 8 to 18 on Saturdays. 
-            See their series of free student recitals throughout the year! """
-            event_tags.append('Young Performer')
+        if is_precollege:
+            csv_event_name = csv_event_name.replace('Student Recital', 'Pre-College Recital')
 
         if 'Faculty Recital' in event_tags:
             csv_event_name = csv_event_name.replace('Student Recital', 'Faculty Recital')
@@ -343,21 +353,5 @@ class JuilliardParser(EventParser):
         csv_dict['event_name'] = csv_event_name
         csv_dict['event_tags'] = ','.join(set(event_tags))
         csv_dict['relevant'] = relevant
-
-
-        if False:
-            # TEMPORARY LIMIT EVENTS BY DATE
-            if not (dt.date(2022, 4, 5) <= event_dt.date() < dt.date(2023, 4, 1)):
-                return None
-
-        if False:
-            # TEMPORARY: Keep only collaborative events
-            if not "with Collaborative Piano" in csv_dict['event_name']:
-                csv_dict['relevant'] = False
-
-        if False:
-        # TEMPORARY: Keep only pre-college events
-            if not is_precollege:
-                return None
 
         return csv_dict
