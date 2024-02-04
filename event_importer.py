@@ -42,9 +42,9 @@ def process_events(
     url_getter: typing.Callable | None = None,
 ):
     """Generic processor for different parsers"""
-    page_file_path = PurePath("./Data", csv_page_contents_file_name)
-    url_file_path = PurePath("./Data", url_file_name)
-    import_file_path = PurePath("./Data", importer_file_name)
+    page_file_path = PurePath("../Data", csv_page_contents_file_name)
+    url_file_path = PurePath("../Data", url_file_name)
+    import_file_path = PurePath("../Data", importer_file_name)
     if live_read_from_urls:
 
         # Read all the individual page URLs
@@ -147,7 +147,6 @@ if __name__ == "__main__":
 
     # Write rows to the Events Calendar CSV file
     if (not LIVE_READ_FROM_URLS) and csv_rows:
-        file_name = './data/import_events_{0}.csv'.format(venue)
-        write_event_rows_to_import_file(file_name, csv_rows, max_num_rows=None)
+        write_event_rows_to_import_file(importer_file_name, csv_rows, max_num_rows=None)
 
     print(f"Done. {len(csv_rows or [])} events written total.")
