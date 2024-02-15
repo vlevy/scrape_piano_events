@@ -82,11 +82,11 @@ if __name__ == "__main__":
     venue = "KAUFMAN"  # October 25 2023
     venue = "NJPAC"  # Last used Oct 28 2023
     venue = "CMS"  # Last used 2023-10-29
-    venue = "BARGEMUSIC"  # Last used November 28 2023
     venue = "JUILLIARD"  # Last used Dec 17 2023
     venue = "MSM"  # Last used Dec 18 2023
-    venue = "CARNEGIE"  # Last used Jan 27 2024
     venue = "EVENTBRITE"  # Last used January 28 2024
+    venue = "BARGEMUSIC"  # Last used February 4 2024
+    venue = "CARNEGIE"  # Last used Jan 27 2024
 
     LIVE_READ_FROM_URLS = False
 
