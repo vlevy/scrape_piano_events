@@ -12,9 +12,10 @@ from pathlib import Path
 from time import sleep
 from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
 
-import importer_globals as G
 import requests
 from bs4 import BeautifulSoup
+
+import importer_globals as G
 from SeleniumLoader import SeleniumLoader
 
 MAX_PARSE_TRIES = 3
@@ -102,7 +103,7 @@ def get_full_image_path(folder, image_file_name):
     :param image_file_name: File name from website
     :return: Full path to downloaded image file
     """
-    full_image_path = f"./Images/{folder}/{folder}_{image_file_name}"
+    full_image_path = f"../Images/{folder}/{folder}_{image_file_name}"
     return full_image_path
 
 
@@ -215,6 +216,9 @@ def parse_html_to_soup(html):
     soup = BeautifulSoup(html, "html.parser")
     return soup
 
+def data_path(file_name: str) -> str:
+    """Return the full path to a file in the data directory"""
+    return str(Path("../data", file_name))
 
 def any_match(needles: typing.Iterable[str], haystacks: typing.Iterable[str]):
     """Find whether any match exists, given a list of texts and a list of matching words.
