@@ -127,9 +127,10 @@ if __name__ == "__main__":
         csv_page_contents_file_path = data_path(f"{venue.lower()}_event_contents.csv")
         importer_file_path = data_path(f"import_events_{venue.lower()}.csv")
 
-        # For a parser that has a check_contents_file method, call it to check the contents file
-        if hasattr(info.parser, "check_contents_file"):
-            info.parser.check_contents_file(csv_page_contents_file_path)
+        if LIVE_READ_FROM_URLS:
+            # For a parser that has a check_contents_file method, call it to check the contents file
+            if hasattr(info.parser, "check_contents_file"):
+                info.parser.check_contents_file(csv_page_contents_file_path)
 
         # Set global variables if they exist
         if info.num_url_tries is not None:
@@ -151,6 +152,6 @@ if __name__ == "__main__":
 
     # Write rows to the Events Calendar CSV file
     if (not LIVE_READ_FROM_URLS) and csv_rows:
-        write_event_rows_to_import_file(importer_file_path, csv_rows, max_num_rows=None)
+        write_event_rows_to_import_file(importer_file_path, csv_rows, max_num_rows=0)
 
     print(f"Done. {len(csv_rows or [])} events written total.")

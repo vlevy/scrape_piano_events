@@ -10,13 +10,14 @@ from datetime import date, datetime
 from http.cookiejar import CookieJar
 from pathlib import Path
 from time import sleep
-from urllib.request import HTTPCookieProcessor, Request, build_opener, urlopen
+from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 import requests
 from bs4 import BeautifulSoup
 
 import importer_globals as G
 from SeleniumLoader import SeleniumLoader
+from upcoming_urls import retrieve_upcoming_urls
 
 MAX_PARSE_TRIES = 3
 EARLIEST_DATE = date(2018, 10, 25)
@@ -112,9 +113,7 @@ def sanitize_filename(filename: str) -> str:
     illegal_chars = ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]
 
     # Use a list comprehension to replace each illegal character with an underscore.
-    sanitized = "".join(
-        [char if char not in illegal_chars else "_" for char in filename]
-    )
+    sanitized = "".join([char if char not in illegal_chars else "_" for char in filename])
 
     return sanitized
 
@@ -127,9 +126,7 @@ def sleep_random(normal_seconds: int | None = None):
         normal_seconds = G.SECONDS_TO_WAIT_BETWEEN_URL_READS
 
     if normal_seconds > 0:
-        seconds_to_wait = random.triangular(
-            normal_seconds * 0.5, normal_seconds * 1.5, normal_seconds
-        )
+        seconds_to_wait = random.triangular(normal_seconds * 0.5, normal_seconds * 1.5, normal_seconds)
         if seconds_to_wait > 0:
             print(f"Waiting {seconds_to_wait:1f} seconds before first try")
             sleep(seconds_to_wait)
@@ -216,9 +213,11 @@ def parse_html_to_soup(html):
     soup = BeautifulSoup(html, "html.parser")
     return soup
 
+
 def data_path(file_name: str) -> str:
     """Return the full path to a file in the data directory"""
     return str(Path("../data", file_name))
+
 
 def any_match(needles: typing.Iterable[str], haystacks: typing.Iterable[str]):
     """Find whether any match exists, given a list of texts and a list of matching words.
@@ -318,12 +317,8 @@ def parse_pages_to_events(page_file_path, parser):
 
             if False:
                 # Limit date not too far into the future
-                if event_row["start_timestamp"] > dt.datetime(
-                    year=2022, month=12, day=31
-                ):
-                    print(
-                        f'Skipping event too far in the future: {event_row["start_timestamp"]}'
-                    )
+                if event_row["start_timestamp"] > dt.datetime(year=2022, month=12, day=31):
+                    print(f'Skipping event too far in the future: {event_row["start_timestamp"]}')
                     continue
 
             event_rows.append(event_row)
@@ -377,20 +372,19 @@ def read_urls(file_name):
 def serve_urls_from_file(file_name):
     """Return URLs from a file of URLs"""
     new_urls = [url for url in read_urls(file_name)]
-
-    # Check for a ".prev" file
-    p = Path(file_name)
-    prev = Path(p.with_suffix(f".prev{p.suffix}"))
     num_urls = len(new_urls)
-    if prev.exists():
-        # Skip URLs processed previously
-        old_urls = [url for url in read_urls(prev)]
-        new_urls = sorted(list(set(new_urls) - set(old_urls)))
 
-    print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
+    # Retrieve URLs for upcoming events
+    old_urls = retrieve_upcoming_urls()
+    if old_urls:
+        # Skip URLs processed previously
+        new_urls = sorted(list(set(new_urls) - set(old_urls)))
+        print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
+    else:
+        print("Warning: Unable to retrieve previously scraped URLs")
+        
     for url in new_urls:
         yield len(new_urls), url
-
 
 def filter_event_row(csv_row):
     if not "relevant" in csv_row:
@@ -400,10 +394,7 @@ def filter_event_row(csv_row):
         print(f'Skipping irrelevant event "{csv_row["event_name"]}"')
         return None
 
-    if (
-        "start_timestamp" in csv_row
-        and csv_row["start_timestamp"].date() < EARLIEST_DATE
-    ):
+    if "start_timestamp" in csv_row and csv_row["start_timestamp"].date() < EARLIEST_DATE:
         # Skip past events
         print(f"Skipping past event")
         return None
@@ -411,20 +402,14 @@ def filter_event_row(csv_row):
     if "event_name" in csv_row:
         if "<b>" in csv_row["event_name"]:
             print("Filtering bold in title")
-            csv_row["event_name"] = (
-                csv_row["event_name"].replace("<b>", "").replace("</b>", "")
-            )
+            csv_row["event_name"] = csv_row["event_name"].replace("<b>", "").replace("</b>", "")
 
         if "&amp;" in csv_row["event_name"]:
             csv_row["event_name"] = csv_row["event_name"].replace("&amp;", "&")
 
         csv_row["event_name"] = f'IMPORT {csv_row["event_name"]}'
 
-    csv_row["event_description"] = (
-        csv_row["event_description"]
-        .replace("Join us", "Join")
-        .replace("join us", "join")
-    )
+    csv_row["event_description"] = csv_row["event_description"].replace("Join us", "Join").replace("join us", "join")
 
     return csv_row
 
@@ -443,10 +428,14 @@ def initialize_csv_dict(url: str) -> dict:
     return csv_dict
 
 
-def write_event_rows_to_import_file(file_name, csv_rows, max_num_rows=None):
+def write_event_rows_to_import_file(file_name: str, csv_rows: list[dict], max_num_rows: int = 0):
     """Write a list of CSV rows to an importer file
     This is the last step of the whole process.
     """
+
+    # Sort the rows by the date in the start_timestamp field
+    csv_rows = sorted(csv_rows, key=lambda x: x["start_timestamp"])
+
     output_csv = None
     file_name_no_ext = os.path.splitext(file_name)[0]
     file_ext = os.path.splitext(file_name)[1]
@@ -456,13 +445,9 @@ def write_event_rows_to_import_file(file_name, csv_rows, max_num_rows=None):
     file_name_to_open = ""
     writer = None
     for i, csv_row in enumerate(csv_rows):
-        if (max_num_rows is None and i == 0) or (
-            (max_num_rows is not None) and not (i % max_num_rows)
-        ):
+        if max_num_rows and ((i == 0) or (i % max_num_rows)):
             if output_csv:
-                print(
-                    f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
-                )
+                print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
                 output_csv.close()
 
             # Open the output file
@@ -484,9 +469,7 @@ def write_event_rows_to_import_file(file_name, csv_rows, max_num_rows=None):
             num_rows_written_to_file += 1
 
     if output_csv:
-        print(
-            f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
-        )
+        print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
         output_csv.close()
 
 
@@ -558,9 +541,7 @@ def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
         tags.add("Premiere")
     if any_match("debut", lower_text):
         tags.add("Debut")
-    if any_match(
-        ["symphony", "orchestra"], lower_text
-    ):  # Avoid hits on 'Orchestrated', etc.
+    if any_match(["symphony", "orchestra"], lower_text):  # Avoid hits on 'Orchestrated', etc.
         tags.add("Orchestra")
         tags.add("Ensemble")
     elif is_pianyc_related_as_accompanied(lower_text):
@@ -616,9 +597,7 @@ def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
 
 def set_tags_from_dict(csv_dict: dict, tags: list[str] | None = None) -> None:
     """Parse tags from and otherwise complete event dictionary"""
-    event_text = (
-        csv_dict.get("event_description", "") + " " + csv_dict.get("event_name", "")
-    )
+    event_text = csv_dict.get("event_description", "") + " " + csv_dict.get("event_name", "")
     event_tags = csv_dict.get("event_tags", None) or []
     if tags:
         event_tags += tags
@@ -628,20 +607,13 @@ def set_tags_from_dict(csv_dict: dict, tags: list[str] | None = None) -> None:
 
 def set_relevant_from_dict(event_dict, include_accompanied=False):
     """Return whether an event is relevant to PIANYC"""
-    if (
-        "start_timestamp" in event_dict
-        and event_dict["start_timestamp"].date() < dt.date.today()
-    ):
+    if "start_timestamp" in event_dict and event_dict["start_timestamp"].date() < dt.date.today():
         # Past event
-        print(
-            f'Skipping event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}'
-        )
+        print(f'Skipping event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}')
         event_dict["relevant"] = False
         return False
 
-    event_text = (
-        event_dict.get("event_description", "") + " " + event_dict.get("event_name", "")
-    )
+    event_text = event_dict.get("event_description", "") + " " + event_dict.get("event_name", "")
     relevant = is_pianyc_related(event_text)
     if (not relevant) and include_accompanied:
         relevant = is_pianyc_related_as_accompanied(event_text)
