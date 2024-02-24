@@ -22,6 +22,7 @@ from NinetySecondsStreetYParser import NinetySecondStreetYParser
 from NjPacParser import NjPacParser
 from NyplParser import NyplParser
 from parser_common_code import (
+    data_path,
     parse_pages_to_events,
     serve_urls_from_file,
     write_event_rows_to_import_file,
@@ -42,9 +43,6 @@ def process_events(
     url_getter: typing.Callable | None = None,
 ):
     """Generic processor for different parsers"""
-    page_file_path = PurePath("../Data", csv_page_contents_file_name)
-    url_file_path = PurePath("../Data", url_file_name)
-    import_file_path = PurePath("../Data", importer_file_name)
     if live_read_from_urls:
 
         # Read all the individual page URLs
@@ -54,11 +52,11 @@ def process_events(
             # TODO: Write URLs to file
         else:
             urls = serve_urls_from_file(url_file_path)
-        write_pages_to_soup_file(urls, page_file_path, parser)
+        write_pages_to_soup_file(urls, csv_page_contents_file_path, parser)
         return None
     else:
         # Read the HTML pages and parse them to events
-        event_rows = parse_pages_to_events(page_file_path, parser)
+        event_rows = parse_pages_to_events(csv_page_contents_file_path, parser)
         return event_rows
 
 
@@ -84,11 +82,11 @@ if __name__ == "__main__":
     venue = "CMS"  # Last used 2023-10-29
     venue = "JUILLIARD"  # Last used Dec 17 2023
     venue = "MSM"  # Last used Dec 18 2023
-    venue = "EVENTBRITE"  # Last used January 28 2024
     venue = "BARGEMUSIC"  # Last used February 4 2024
     venue = "CARNEGIE"  # Last used Jan 27 2024
+    venue = "EVENTBRITE"  # Last used February 5 2024
 
-    LIVE_READ_FROM_URLS = False
+    LIVE_READ_FROM_URLS = True
 
     @dataclass
     class VenueInfo:
@@ -98,26 +96,26 @@ if __name__ == "__main__":
 
     # Dictionary for venue configurations
     venue_configurations = {
-        'BARGEMUSIC': VenueInfo(BargemusicParser_2()),
-        'CARNEGIE': VenueInfo(CarnegieHallParser(), 1, 30.0),
-        'JUILLIARD': VenueInfo(JuilliardParser()),
-        'EVENTBRITE': VenueInfo(EventBriteParser_v2(), None, 1),
-        'CMS': VenueInfo(CmsParser()),
-        'LINCOLN_CENTER': VenueInfo(LincolnCenterParser(), None, 20.0),
-        '92Y': VenueInfo(NinetySecondStreetYParser()),
-        'SPECTRUM': VenueInfo(SpectrumParser()),
-        'SCANDINAVIA_HOUSE': VenueInfo(ScandinaviaHouseParser()),
-        'MANNES': VenueInfo(MannesParser(), 2, 60.0),
-        'ZINC-JAZZ': VenueInfo(ZincParser()),
-        'KAUFMAN': VenueInfo(KaufmanParser()),
-        'NJPAC': VenueInfo(NjPacParser()),
-        'NATIONAL_SAWDUST': VenueInfo(NationalSawdustParser()),
-        'MSM': VenueInfo(MsmParser()),
-        'SYMPHONY_SPACE': VenueInfo(SymphonySpaceParser()),
-        'NYPL': VenueInfo(NyplParser()),
-        'BIRDLAND': VenueInfo(BirdlandParser()),
-        'BLUE_NOTE': VenueInfo(BlueNoteParser()),
-        'JAZZ_ORG': VenueInfo(JazzOrgParser()),
+        "BARGEMUSIC": VenueInfo(BargemusicParser_2()),
+        "CARNEGIE": VenueInfo(CarnegieHallParser(), 1, 30.0),
+        "JUILLIARD": VenueInfo(JuilliardParser()),
+        "EVENTBRITE": VenueInfo(EventBriteParser_v2(), None, 1),
+        "CMS": VenueInfo(CmsParser()),
+        "LINCOLN_CENTER": VenueInfo(LincolnCenterParser(), None, 20.0),
+        "92Y": VenueInfo(NinetySecondStreetYParser()),
+        "SPECTRUM": VenueInfo(SpectrumParser()),
+        "SCANDINAVIA_HOUSE": VenueInfo(ScandinaviaHouseParser()),
+        "MANNES": VenueInfo(MannesParser(), 2, 60.0),
+        "ZINC-JAZZ": VenueInfo(ZincParser()),
+        "KAUFMAN": VenueInfo(KaufmanParser()),
+        "NJPAC": VenueInfo(NjPacParser()),
+        "NATIONAL_SAWDUST": VenueInfo(NationalSawdustParser()),
+        "MSM": VenueInfo(MsmParser()),
+        "SYMPHONY_SPACE": VenueInfo(SymphonySpaceParser()),
+        "NYPL": VenueInfo(NyplParser()),
+        "BIRDLAND": VenueInfo(BirdlandParser()),
+        "BLUE_NOTE": VenueInfo(BlueNoteParser()),
+        "JAZZ_ORG": VenueInfo(JazzOrgParser()),
     }
 
     # Usage example with the dictionary
@@ -125,28 +123,34 @@ if __name__ == "__main__":
         info = venue_configurations[venue]
 
         # Calculate file names based on venue
-        url_file_name = f"{venue.lower()}_urls.txt"
-        csv_page_contents_file_name = f"{venue.lower()}_event_contents.csv"
-        importer_file_name = f"import_events_{venue.lower()}.csv"
-        
+        url_file_path = data_path(f"{venue.lower()}_urls.txt")
+        csv_page_contents_file_path = data_path(f"{venue.lower()}_event_contents.csv")
+        importer_file_path = data_path(f"import_events_{venue.lower()}.csv")
+
+        # For a parser that has a check_contents_file method, call it to check the contents file
+        if hasattr(info.parser, "check_contents_file"):
+            info.parser.check_contents_file(csv_page_contents_file_path)
+
         # Set global variables if they exist
         if info.num_url_tries is not None:
             G.NUM_URL_TRIES = info.num_url_tries
         if info.seconds_to_wait is not None:
             G.SECONDS_TO_WAIT_BETWEEN_URL_READS = info.seconds_to_wait
 
-        # For a parser that has a read_urls method, call it to create the URLs file 
+        # For a parser that has a read_urls method, call it to create the URLs file
         # (URLs are returned for debugging)
         if hasattr(info.parser, "read_urls") and LIVE_READ_FROM_URLS:
-            urls = info.parser.read_urls(url_file_name)
+            urls = info.parser.read_urls(url_file_path)
 
         # Now call process_events with the relevant info
-        csv_rows = process_events(LIVE_READ_FROM_URLS, url_file_name, csv_page_contents_file_name, importer_file_name, info.parser)
+        csv_rows = process_events(
+            LIVE_READ_FROM_URLS, url_file_path, csv_page_contents_file_path, importer_file_path, info.parser
+        )
     else:
         raise ValueError(f'Invalid venue: "{venue}"')
 
     # Write rows to the Events Calendar CSV file
     if (not LIVE_READ_FROM_URLS) and csv_rows:
-        write_event_rows_to_import_file(importer_file_name, csv_rows, max_num_rows=None)
+        write_event_rows_to_import_file(importer_file_path, csv_rows, max_num_rows=None)
 
     print(f"Done. {len(csv_rows or [])} events written total.")
