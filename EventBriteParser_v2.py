@@ -1,11 +1,22 @@
-from datetime import datetime
 import json
-from parser_common_code import parse_url_to_soup, encode_html, initialize_csv_dict, set_start_end_fields_from_start_dt, \
-    parse_price_range, set_tags_from_dict, set_relevant_from_dict, is_in_new_york, sleep_random
-from EventParser import EventParser
+import os
+from datetime import datetime
 from pathlib import PurePath
 from time import sleep
+
 import importer_globals as G
+from EventParser import EventParser
+from parser_common_code import (
+    encode_html,
+    initialize_csv_dict,
+    is_in_new_york,
+    parse_price_range,
+    parse_url_to_soup,
+    set_relevant_from_dict,
+    set_start_end_fields_from_start_dt,
+    set_tags_from_dict,
+    sleep_random,
+)
 
 
 class EventBriteParser_v2(EventParser):
@@ -610,6 +621,20 @@ class EventBriteParser_v2(EventParser):
         else:
             return soup
 
+    def check_contents_file(self, file_name: str):
+        """Check whether the event contents file exists
+        """
+        if os.path.exists(file_name):
+            # Offer to delete the file
+            print(f'Contents file {file_name} already exists. Delete it?')
+            response = input('y/n: ')
+            if response.lower() == 'y':
+                os.remove(file_name)
+                print(f'File {file_name} deleted')
+            else:
+                raise RuntimeError(f'File {file_name} already exists. Delete it manually before running.')
+        
+
     @staticmethod
     def read_urls(url_file_name):
         """Read the event-page URLs for the first 10 pages of piano events in Manhattan
@@ -628,7 +653,7 @@ class EventBriteParser_v2(EventParser):
                 urls.add(url_this_event)
 
         # Write the URLs out to a file for safekeeping
-        url_file_path = PurePath('./Data', url_file_name)
+        url_file_path = PurePath('../Data', url_file_name)
         with open(url_file_path, 'w', newline='\n') as url_file:
             for url_this_page in urls:
                 url_file.write(url_this_page + '\n')
