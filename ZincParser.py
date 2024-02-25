@@ -1,10 +1,15 @@
 import datetime as dt
 import re
 import urllib
-from EventParser import EventParser
-from parser_common_code import initialize_csv_dict, set_start_end_fields_from_start_dt, set_tags_from_dict
 
-# Map venues in the listing to the exact venue name in PIANYC
+from EventParser import EventParser
+from parser_common_code import (
+    initialize_csv_dict,
+    set_start_end_fields_from_start_dt,
+    set_tags_from_dict,
+)
+
+# Map venues in the listing to the exact venue name in the website
 
 class ZincParser(EventParser):
 

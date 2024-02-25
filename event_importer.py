@@ -4,7 +4,7 @@ from pathlib import PurePath
 from typing import Any, Optional
 
 import importer_globals as G
-from BargemusicParser_2 import BargemusicParser_2
+from BargemusicParser import BargemusicParser
 from BirdlandParser import BirdlandParser
 from BlueNoteParser import BlueNoteParser
 from CarnegieHallParser import CarnegieHallParser
@@ -98,7 +98,7 @@ if __name__ == "__main__":
 
     # Dictionary for venue configurations
     venue_configurations = {
-        "BARGEMUSIC": VenueInfo(BargemusicParser_2()),
+        "BARGEMUSIC": VenueInfo(BargemusicParser()),
         "CARNEGIE": VenueInfo(CarnegieHallParser(), 1, 30.0),
         "JUILLIARD": VenueInfo(JuilliardParser()),
         "EVENTBRITE": VenueInfo(EventBriteParser_v2(), None, 1),

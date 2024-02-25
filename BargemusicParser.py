@@ -1,11 +1,15 @@
 import re
 from datetime import date, datetime
-import re
-from EventParser import EventParser
-from parser_common_code import initialize_csv_dict, set_tags_from_dict, \
-    set_start_end_fields_from_start_dt, replace_pattern
 
-class BargemusicParser_2(EventParser):
+from EventParser import EventParser
+from parser_common_code import (
+    initialize_csv_dict,
+    set_start_end_fields_from_start_dt,
+    set_tags_from_dict,
+)
+
+
+class BargemusicParser(EventParser):
 
     @staticmethod
     def parse_soup_to_event(url, soup):

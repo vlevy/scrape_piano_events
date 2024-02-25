@@ -1,10 +1,18 @@
-import re
 import datetime as dt
-from parser_common_code import initialize_csv_dict, set_start_end_fields_from_start_dt, \
-    parse_price_range, is_pianyc_related, is_pianyc_related_as_accompanied, parse_event_tags, get_full_image_path, \
-    any_match
+import re
 from pathlib import PurePath
+
 from EventParser import EventParser
+from parser_common_code import (
+    any_match,
+    get_full_image_path,
+    initialize_csv_dict,
+    is_relevant_to_site,
+    is_relevant_to_site_as_accompanied,
+    parse_event_tags,
+    parse_price_range,
+    set_start_end_fields_from_start_dt,
+)
 
 DEFAULT_JUILLIARD_IMAGE_URL = 'https://www.juilliard.edu/sites/default/files/styles/wide_1920x1080/public/juilliard37_2400x1350.jpg'
 
@@ -159,8 +167,8 @@ class JuilliardParser(EventParser):
         # -----------------------------------
         # Event description
         # -----------------------------------
-        relevant = is_pianyc_related(event_name_from_page) or \
-                   is_pianyc_related_as_accompanied(event_name_from_page) or \
+        relevant = is_relevant_to_site(event_name_from_page) or \
+                   is_relevant_to_site_as_accompanied(event_name_from_page) or \
                    event_name_from_page == 'Pre-College Faculty Recital' or \
                    any_match(('MAP Student Recital', 'MAP Chamber', 'Chamber Music Recital',
                               'Honors Chamber Music', 'Ensemble Connect', 'Chamberfest', 'Vocal Arts'),
@@ -175,8 +183,8 @@ class JuilliardParser(EventParser):
         if program_list_element:
             program_list = program_list_element.contents
             relevant = relevant or \
-                       is_pianyc_related(str(program_list)) or \
-                       is_pianyc_related_as_accompanied(str(program_list))
+                       is_relevant_to_site(str(program_list)) or \
+                       is_relevant_to_site_as_accompanied(str(program_list))
             program = ''.join(str(work) for work in program_list)
             event_description_rows.append('')
             if not re.match('<em> *</em>', program):
@@ -210,7 +218,7 @@ class JuilliardParser(EventParser):
         else:
             event_tags.append('Student Recital')
 
-        if is_pianyc_related(event_name_from_page):
+        if is_relevant_to_site(event_name_from_page):
             event_tags.append('Pure Keyboard')
             event_tags.append('Solo')
         else:
@@ -244,7 +252,7 @@ class JuilliardParser(EventParser):
 
         if False:
             # Forget about pre-college non-keyboard recitals
-            if is_precollege and not is_pianyc_related(event_name_from_page):
+            if is_precollege and not is_relevant_to_site(event_name_from_page):
                 print(f'Info: Non-keyboard pre-college event {event_name_from_page}')
                 return None
 
@@ -265,7 +273,7 @@ class JuilliardParser(EventParser):
                 # Unusual -- possibly piano duo, collaborative, organ or harpsichord
                 csv_event_name = f'Juilliard Student Recital: {student}, {instrument}'
         elif is_precollege and \
-                is_pianyc_related(event_name_from_page) and \
+                is_relevant_to_site(event_name_from_page) and \
                 'pre-college faculty' not in event_name_from_page.lower() and \
                 program_list_element and \
                 program_list_element.find_all('p'):
@@ -276,7 +284,7 @@ class JuilliardParser(EventParser):
             for performer in program_list_element.find_all('p'):
                 performer_text = str(performer.contents[0])
                 # Relevant performers in bold
-                if is_pianyc_related(performer_text):
+                if is_relevant_to_site(performer_text):
                     def remove_tag_if_exists(tag):
                         if tag in event_tags:
                             event_tags.remove(tag)

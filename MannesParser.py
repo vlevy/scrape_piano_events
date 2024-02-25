@@ -2,11 +2,18 @@ import datetime as dt
 import json
 import re
 import urllib
-from EventParser import EventParser
-from parser_common_code import utc_to_local, is_pianyc_related, is_pianyc_related_as_accompanied, \
-    set_start_end_fields_from_start_dt, initialize_csv_dict, set_tags_from_dict
 
-# Map venues in the listing to the exact venue name in PIANYC
+from EventParser import EventParser
+from parser_common_code import (
+    initialize_csv_dict,
+    is_relevant_to_site,
+    is_relevant_to_site_as_accompanied,
+    set_start_end_fields_from_start_dt,
+    set_tags_from_dict,
+    utc_to_local,
+)
+
+# Map venues in the listing to the exact venue name in the website
 venue_map = {
     '': 'Arnhold Hall at the New School',
     '1127 6th Ave, New York, NY 10036': 'Steinway Hall',
@@ -48,7 +55,7 @@ venue_map = {
     'Weill Recital Hall at Carnegie Hall': 'Carnegie Hall',
     'Wollman Hall, Eugene Lang College': 'Eugene Lang College of Liberal Arts at The New School',
 }
-# Map venues in PIANYC to what to put in the post title, e.g., "Richard Goode Master Class, at Mannes"
+# Map venues in the website to what to put in the post title, e.g., "Richard Goode Master Class, at Mannes"
 venue_title_map = {
     'Alvin Johnson/J.M. Kaplan Hall': 'The New School',
     'Parsons School of Design': 'The New School',
@@ -98,7 +105,7 @@ class MannesParser(EventParser):
         title_venue = venue_title_map[venue_name]
 
         event_name = f'Mannes Student Recital: {event_name}'
-        if is_pianyc_related_as_accompanied(event_name):
+        if is_relevant_to_site_as_accompanied(event_name):
             event_name += ' with Collaborative Piano'
 
         if title_venue != 'The New School':
@@ -129,8 +136,8 @@ class MannesParser(EventParser):
         csv_dict['event_description'] = description
 
         # Relevant
-        relevant = is_pianyc_related(str(description)) or \
-                   is_pianyc_related_as_accompanied(str(description))
+        relevant = is_relevant_to_site(str(description)) or \
+                   is_relevant_to_site_as_accompanied(str(description))
         csv_dict['relevant'] = relevant
 
         # Price

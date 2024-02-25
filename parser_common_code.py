@@ -567,7 +567,7 @@ def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
     if any_match(["symphony", "orchestra"], lower_text):  # Avoid hits on 'Orchestrated', etc.
         tags.add("Orchestra")
         tags.add("Ensemble")
-    elif is_pianyc_related_as_accompanied(lower_text):
+    elif is_relevant_to_site_as_accompanied(lower_text):
         tags.add("Chamber Music")
         tags.add("Collaborative")
         tags.add("Ensemble")
@@ -619,7 +619,7 @@ def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
 
 
 def set_tags_from_dict(csv_dict: dict, tags: list[str] | None = None) -> None:
-    """Parse tags from and otherwise complete event dictionary"""
+    """Parse tags from an otherwise complete event dictionary"""
     event_text = csv_dict.get("event_description", "") + " " + csv_dict.get("event_name", "")
     event_tags = csv_dict.get("event_tags", None) or []
     if tags:
@@ -629,7 +629,7 @@ def set_tags_from_dict(csv_dict: dict, tags: list[str] | None = None) -> None:
 
 
 def set_relevant_from_dict(event_dict, include_accompanied=False):
-    """Return whether an event is relevant to PIANYC"""
+    """Return whether an event is relevant to the website"""
     if "start_timestamp" in event_dict and event_dict["start_timestamp"].date() < dt.date.today():
         # Past event
         print(f'Skipping event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}')
@@ -637,9 +637,9 @@ def set_relevant_from_dict(event_dict, include_accompanied=False):
         return False
 
     event_text = event_dict.get("event_description", "") + " " + event_dict.get("event_name", "")
-    relevant = is_pianyc_related(event_text)
+    relevant = is_relevant_to_site(event_text)
     if (not relevant) and include_accompanied:
-        relevant = is_pianyc_related_as_accompanied(event_text)
+        relevant = is_relevant_to_site_as_accompanied(event_text)
     event_dict["relevant"] = relevant
     return relevant
 
@@ -667,8 +667,8 @@ def parse_price_range(pricing_text):
     return price
 
 
-def is_pianyc_related(haystack):
-    """Returns whether a string is relevant to pianyc"""
+def is_relevant_to_site(haystack):
+    """Returns whether a string is relevant to the website"""
     if isinstance(haystack, str):
         # Convert string to list
         haystack = [
@@ -689,9 +689,9 @@ def is_pianyc_related(haystack):
     return is_relevant
 
 
-def is_pianyc_related_as_accompanied(haystack: typing.Iterable[str]) -> bool:
+def is_relevant_to_site_as_accompanied(haystack: typing.Iterable[str]) -> bool:
     """
-    Returns whether a string is relevant to pianyc as an instrument that is normally accompanied by piano
+    Returns whether a string is relevant to the website as an instrument that is normally accompanied by piano
     :param haystack: Words to sample to check whether the event is relevant
     :return: Whether the event is relevant as accompanied
     """
