@@ -28,6 +28,7 @@ from parser_common_code import (
     write_event_rows_to_import_file,
     write_pages_to_soup_file,
 )
+from prior_urls import append_to_prior_urls_file
 from ScandinaviaHouseParser import ScandinaviaHouseParser
 from SpectrumParser import SpectrumParser
 from SymphonySpaceParser import SymphonySpaceParser
@@ -53,6 +54,7 @@ def process_events(
         else:
             urls = serve_urls_from_file(url_file_path)
         write_pages_to_soup_file(urls, csv_page_contents_file_path, parser)
+
         return None
     else:
         # Read the HTML pages and parse them to events
@@ -82,9 +84,9 @@ if __name__ == "__main__":
     venue = "CMS"  # Last used 2023-10-29
     venue = "JUILLIARD"  # Last used Dec 17 2023
     venue = "MSM"  # Last used Dec 18 2023
-    venue = "BARGEMUSIC"  # Last used February 4 2024
     venue = "CARNEGIE"  # Last used Jan 27 2024
-    venue = "EVENTBRITE"  # Last used February 5 2024
+    venue = "EVENTBRITE"  # Last used February 24 2024
+    venue = "BARGEMUSIC"  # Last used February 4 2024
 
     LIVE_READ_FROM_URLS = True
 
@@ -152,6 +154,6 @@ if __name__ == "__main__":
 
     # Write rows to the Events Calendar CSV file
     if (not LIVE_READ_FROM_URLS) and csv_rows:
-        write_event_rows_to_import_file(importer_file_path, csv_rows, max_num_rows=0)
+        write_event_rows_to_import_file(importer_file_path, url_file_path, csv_rows, max_num_rows=0)
 
     print(f"Done. {len(csv_rows or [])} events written total.")

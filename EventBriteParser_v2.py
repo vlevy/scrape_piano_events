@@ -621,19 +621,6 @@ class EventBriteParser_v2(EventParser):
         else:
             return soup
 
-    def check_contents_file(self, file_name: str):
-        """Check whether the event contents file exists
-        """
-        if os.path.exists(file_name):
-            # Offer to delete the file
-            print(f'Contents file {file_name} already exists. Delete it?')
-            response = input('y/n: ')
-            if response.lower() == 'y':
-                os.remove(file_name)
-                print(f'File {file_name} deleted')
-            else:
-                raise RuntimeError(f'File {file_name} already exists. Delete it manually before running.')
-        
 
     @staticmethod
     def read_urls(url_file_name):
