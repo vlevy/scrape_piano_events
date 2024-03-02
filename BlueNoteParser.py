@@ -1,5 +1,6 @@
 import re
 from datetime import date, datetime
+
 from EventParser import EventParser
 from parser_common_code import (
     initialize_csv_dict,
@@ -22,15 +23,11 @@ class BlueNoteParser(EventParser):
 
         # Event name
         page_event_name = str(soup.find_all("h1")[0].contents[0])
-        page_event_name = " ".join(
-            [word.capitalize() for word in page_event_name.lower().split()]
-        )
+        page_event_name = " ".join([word.capitalize() for word in page_event_name.lower().split()])
         csv_dict["event_name"] = f"{page_event_name} at {venue}"
 
         # Description
-        event_description = "\n".join(
-            [b.get_text().strip() for b in soup.find_all("td", attrs={"class": "text"})]
-        )
+        event_description = "\n".join([b.get_text().strip() for b in soup.find_all("td", attrs={"class": "text"})])
         csv_dict["event_description"] = event_description
 
         # Tags
@@ -51,11 +48,7 @@ class BlueNoteParser(EventParser):
             # 'Sunday, March 15, 2020'
             date_str = str(soup.find("span", attrs={"class": "dates"}).contents[0])
             # 'Show: 7 PM'
-            time_str = (
-                soup.find("span", attrs={"class": "start"})
-                .contents[0]
-                .replace("Show: ", "")
-            )
+            time_str = soup.find("span", attrs={"class": "start"}).contents[0].replace("Show: ", "")
             if ":" not in time_str:
                 # Change 7 PM to 7:30 PM
                 time_str = time_str[:-3] + ":00" + time_str[-3:]
@@ -68,12 +61,8 @@ class BlueNoteParser(EventParser):
 
         # Price
         try:
-            price_str = str(
-                soup.find("span", attrs={"class": "price-range"}).contents[0]
-            )
-            csv_dict["event_cost"] = (
-                price_str.replace("$", "").replace(" ", "").replace(".00", "")
-            )
+            price_str = str(soup.find("span", attrs={"class": "price-range"}).contents[0])
+            csv_dict["event_cost"] = price_str.replace("$", "").replace(" ", "").replace(".00", "")
         except Exception as ex:
             print(f"Unable to get price")
 

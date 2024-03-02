@@ -1,11 +1,13 @@
-from datetime import datetime
 import json
+from datetime import datetime
+
 from bs4 import BeautifulSoup
+
 from EventParser import EventParser
 from parser_common_code import (
     initialize_csv_dict,
-    set_start_end_fields_from_start_dt,
     parse_event_tags,
+    set_start_end_fields_from_start_dt,
 )
 
 VENUE_TRANSLATIONS_FOR_VENUE = {
@@ -27,9 +29,7 @@ class CmsParser(EventParser):
     @staticmethod
     def read_urls():
         """Read the event-page URLs for the first 10 pages of piano events in Manhattan"""
-        with open(
-            "chamber_music_society_urls_spring_2018.txt", encoding="utf-8"
-        ) as url_file:
+        with open("chamber_music_society_urls_spring_2018.txt", encoding="utf-8") as url_file:
             urls = url_file.readlines()
 
         return urls
@@ -85,17 +85,9 @@ class CmsParser(EventParser):
         # Venue
         venue = None
         try:
-            venue = str(
-                soup.find("p", attrs={"class": "concert-header__venue"}).contents[0]
-            )
+            venue = str(soup.find("p", attrs={"class": "concert-header__venue"}).contents[0])
         except Exception as ex:
-            for i, c in enumerate(
-                json.loads(
-                    soup.find("script", attrs={"type": "application/ld+json"}).contents[
-                        0
-                    ]
-                )
-            ):
+            for i, c in enumerate(json.loads(soup.find("script", attrs={"type": "application/ld+json"}).contents[0])):
                 if "url" in c and "location" in c and url in c["url"]:
                     # Found the venue in the alternate location
                     venue = c["location"]
@@ -114,9 +106,7 @@ class CmsParser(EventParser):
         csv_dict["organizer_name"] = "Chamber Music Society of Lincoln Center"
 
         # When
-        event_when = str(
-            soup.find("p", attrs={"class": "concert-header__date"}).contents[0]
-        )
+        event_when = str(soup.find("p", attrs={"class": "concert-header__date"}).contents[0])
         parsers = (
             "%a, %b %d, %Y, %I:%M %p",  # Sun, Jan 28, 2024, 5:00 pm
             "%A, %B %d %Y, %I:%M %p",
@@ -139,17 +129,15 @@ class CmsParser(EventParser):
             set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
         else:
             # Placeholder start date, so importer will accept it
-            set_start_end_fields_from_start_dt(
-                csv_dict, datetime(2024, 1, 1, 8, 0, 0), minutes=90
-            )
+            set_start_end_fields_from_start_dt(csv_dict, datetime(2024, 1, 1, 8, 0, 0), minutes=90)
 
         # $<span class="u-large">40</span>.00–$<span class="u-large">80</span>.00
         try:
             event_costs = [
                 eval(s.contents[0])
-                for s in soup.find(
-                    "div", attrs={"class": "production-header__price"}
-                ).find_all("span", attrs={"class": "u-large"})
+                for s in soup.find("div", attrs={"class": "production-header__price"}).find_all(
+                    "span", attrs={"class": "u-large"}
+                )
             ]
         except Exception as ex:
             event_costs = [0]
@@ -175,8 +163,7 @@ class CmsParser(EventParser):
                         and hasattr(inner_content, "find_all")
                         and inner_content.find_all()
                         and inner_content.find_all()[0].has_key("class")
-                        and inner_content.find_all()[0]["class"][0]
-                        == "program-panel__composer__name"
+                        and inner_content.find_all()[0]["class"][0] == "program-panel__composer__name"
                     ):
                         if len(inner_content.contents) == 1:
                             composer = f"<p><h4>{inner_content.contents[0].contents[0]}</h4></p>"
@@ -194,17 +181,11 @@ class CmsParser(EventParser):
 
         # Description
         description_list = list()
-        add_section_to_description(
-            soup.find("div", attrs={"class": "content-panel__body"})
-        )
+        add_section_to_description(soup.find("div", attrs={"class": "content-panel__body"}))
         description_list.append("\n\n<h2>Program</h2>")
-        add_section_to_description(
-            soup.find("div", attrs={"class": "program-panel__list"})
-        )
+        add_section_to_description(soup.find("div", attrs={"class": "program-panel__list"}))
         description_list.append("\n\n<h2>Performers</h2>")
-        add_section_to_description(
-            soup.find("div", attrs={"class": "people-panel__list"})
-        )
+        add_section_to_description(soup.find("div", attrs={"class": "people-panel__list"}))
 
         description = "".join(description_list)
         csv_dict["event_description"] = description
@@ -253,12 +234,8 @@ class CmsParser(EventParser):
         # #--------------------------------------
 
         # Name
-        name_from_page = soup.find(
-            "h1", attrs={"class": "concert-header__title"}
-        ).contents[0]
-        event_name = "Chamber Music Society of Lincoln Center, {0}".format(
-            name_from_page
-        )
+        name_from_page = soup.find("h1", attrs={"class": "concert-header__title"}).contents[0]
+        event_name = "Chamber Music Society of Lincoln Center, {0}".format(name_from_page)
         # if False and pianists:
         #     # Call out the pianists
         #     event_name = '{0}; {1}, Piano'.format(event_name, ' and '.join(pianists))

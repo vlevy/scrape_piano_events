@@ -274,6 +274,8 @@ def check_contents_file(file_name: str) -> int:
         os.remove(file_name)
         print(f"File {file_name} deleted")
         return 0
+    else:
+        raise RuntimeError(f"Invalid response {response}")
 
 
 def write_pages_to_soup_file(urls, page_file_path, parser):
