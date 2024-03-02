@@ -7,9 +7,11 @@ from webdriver_manager.chrome import ChromeDriverManager
 # Import undetected_chromedriver only if you're planning to use it
 try:
     import undetected_chromedriver as uc
+
     UNDETECTED_AVAILABLE = True
 except ImportError:
     UNDETECTED_AVAILABLE = False
+
 
 class SeleniumLoader:
     def __init__(self, undetected=False):
@@ -32,13 +34,18 @@ class SeleniumLoader:
     def soup_from_url(self, url: str):
         """
         Loads a web page in the current browser session and returns its BeautifulSoup representation.
-        
+
         :param url: URL to load.
         :return: BeautifulSoup object of the page source.
         """
-        self.driver.get(url)
-        # Screenshot for debugging (optional)
-        if self.undetected:
-            self.driver.save_screenshot(r"c:/temp/selenium_screenshot.png")
-        soup = BeautifulSoup(self.driver.page_source, 'html.parser')
+        try:
+            self.driver.get(url)
+            # Screenshot for debugging (optional)
+            if self.undetected:
+                self.driver.save_screenshot(r"c:/temp/selenium_screenshot.png")
+            soup = BeautifulSoup(self.driver.page_source, "html.parser")
+        except Exception as e:
+            print(f"Error loading {url}: {e}")
+            soup = None
+
         return soup
