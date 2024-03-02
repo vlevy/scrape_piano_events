@@ -168,6 +168,9 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
                 if not selenium_loader:
                     selenium_loader = SeleniumLoader()
                 soup = selenium_loader.soup_from_url(url)
+                if not soup:
+                    print("Selenium loader failed")
+                    continue
 
             if image_downloader:
                 # This parser requires downloading the featured image, probably because the server does not allow
@@ -237,17 +240,40 @@ def any_match(needles: typing.Iterable[str], haystacks: typing.Iterable[str]):
     return False
 
 
-def check_contents_file(file_name: str):
+def check_contents_file(file_name: str) -> int:
     """Check whether the event contents file exists"""
-    if os.path.exists(file_name):
-        # Offer to delete the file
-        print(f"Contents file {file_name} already exists. Delete it?")
-        response = input("y/n: ")
-        if response.lower() == "y":
-            os.remove(file_name)
-            print(f"File {file_name} deleted")
-        else:
-            raise RuntimeError(f"File {file_name} already exists. Delete it manually before running.")
+    if not os.path.exists(file_name):
+        # File does not exist
+        return 0
+
+    # Since the file is a CSV file, open it as a CSV file and check how many lines it has
+    with open(file_name, encoding="utf-8") as event_page_file:
+        csv_reader = csv.reader(event_page_file)
+        num_rows = len(list(csv_reader))
+
+        # Read the last row to get the URL
+        event_page_file.seek(0)
+        last_row = list(csv_reader)[-1]
+
+    # The URL is the first element in the row
+    last_url = last_row[0]
+
+    # Offer three options: 1) quit 2) append to the file, or 3) overwrite the file
+    print(f"Contents file {file_name} already exists with {num_rows} lines.")
+    print(f"Last URL in file: {last_url}")
+    print("Options:")
+    print("1) Quit")
+    print("2) Append to the file")
+    print("3) Overwrite the file")
+    response = input("1/2/3: ")
+    if response == "1":
+        raise RuntimeError(f"File {file_name} already exists. Quitting.")
+    elif response == "2":
+        return num_rows
+    elif response == "3":
+        os.remove(file_name)
+        print(f"File {file_name} deleted")
+        return 0
 
 
 def write_pages_to_soup_file(urls, page_file_path, parser):
@@ -258,7 +284,7 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
     for i, (num_urls, url) in enumerate(urls):
         # Remove the page file if it already exists
         if i == 0:
-            check_contents_file(page_file_path)
+            num_rows_in_contents_file = check_contents_file(page_file_path)
 
         if not url.strip():
             continue
