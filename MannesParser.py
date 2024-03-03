@@ -1,7 +1,4 @@
 import datetime as dt
-import json
-import re
-import urllib
 
 from EventParser import EventParser
 from parser_common_code import (
