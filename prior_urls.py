@@ -33,7 +33,7 @@ def _read_urls_from_file(file_name: str) -> list[str]:
 
     try:
         with open(prior_file_name, "r") as f:
-            return f.readlines()
+            return [l.strip() for l in f.readlines()]
     except FileNotFoundError:
         return []
 
