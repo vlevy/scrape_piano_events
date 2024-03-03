@@ -37,6 +37,7 @@ VENUE_TRANSLATIONS = {
     "Dizzy's Club Coca-Cola": None,
     "Dizzy's Club": "Dizzy's Club Coca-Cola",
     "Glorya Kaufman Dance Studio": "the Juilliard School",
+    "Good Shepherd-Faith Presbyterian Church": None,
     "Holy Trinity Lutheran Church": None,
     "Kaufman Dance Studio": "the Juilliard School",
     "Lippes Concert Hall in Slee Hall, SUNY": "skip",
