@@ -14,10 +14,10 @@ except ImportError:
 
 
 class SeleniumLoader:
-    def __init__(self, undetected=False):
+    def __init__(self, undetected: bool = False):
         self.undetected = undetected
         if self.undetected and UNDETECTED_AVAILABLE:
-            self.driver = uc.Chrome(use_subprocess=False)  # uc manages driver itself
+            self.driver = uc.Chrome()  # uc manages driver itself
         else:
             # Setup Chrome options
             opts = Options()

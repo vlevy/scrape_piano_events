@@ -24,8 +24,6 @@ MAX_PARSE_TRIES = 3
 EARLIEST_DATE = date(2018, 10, 25)
 EARLIEST_DATE = date.today()
 
-selenium_loader: SeleniumLoader | None = None
-
 # Event columns in the correct order for importing.
 # UNDERSTAND THIS BEFORE CHANGING THE ORDER.
 CSV_COLUMNS_ORDERED = (
@@ -140,7 +138,6 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
     # Must delay between reads for:
     # Carnegie Hall
     #
-    global selenium_loader
 
     # For sensitive websites, wait to avoid being blocked
     if wait_first_try:
@@ -149,28 +146,13 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
     soup = None
     for i in range(G.NUM_URL_TRIES):
         try:
-            user_agent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0"
-            headers = {"User-Agent": f"{user_agent}"}
-            cookie_jar = CookieJar()
-            opener = build_opener(HTTPCookieProcessor(cookie_jar))
-            if False:
-                # Reading the cookie prevents 302/infinite redirect loop errors
-                print("Opening page")
-
-                req = Request(url, headers=headers)
-                page = opener.open(req)
-                print("Reading page")
-                raw_page = page.read().decode("utf8", errors="ignore")
-                print("Closing page")
-                page.close()
-                soup = BeautifulSoup(raw_page, "html.parser")
-            elif True:
-                if not selenium_loader:
-                    selenium_loader = SeleniumLoader()
-                soup = selenium_loader.soup_from_url(url)
-                if not soup:
-                    print("Selenium loader failed")
-                    continue
+            selenium_loader = SeleniumLoader(True)
+            soup = selenium_loader.soup_from_url(url)
+            del selenium_loader
+            selenium_loader = None
+            if not soup:
+                print("Selenium loader failed")
+                continue
 
             if image_downloader:
                 # This parser requires downloading the featured image, probably because the server does not allow
@@ -249,17 +231,21 @@ def check_contents_file(file_name: str) -> int:
     # Since the file is a CSV file, open it as a CSV file and check how many lines it has
     with open(file_name, encoding="utf-8") as event_page_file:
         csv_reader = csv.reader(event_page_file)
-        num_rows = len(list(csv_reader))
 
         # Read the last row to get the URL
         event_page_file.seek(0)
-        last_row = list(csv_reader)[-1]
+        all_rows = list(csv_reader)
+        all_non_empty_rows = [row for row in all_rows if row != []]
+        last_row = all_non_empty_rows[-1]
+
+    # The number of existing events is the number of non-empty rows minus one for the header row
+    num_events = len(all_non_empty_rows) - 1
 
     # The URL is the first element in the row
     last_url = last_row[0]
 
     # Offer three options: 1) quit 2) append to the file, or 3) overwrite the file
-    print(f"Contents file {file_name} already exists with {num_rows} lines.")
+    print(f"Contents file {file_name} already exists with {num_events} events.")
     print(f"Last URL in file: {last_url}")
     print("Options:")
     print("1) Quit")
@@ -269,7 +255,14 @@ def check_contents_file(file_name: str) -> int:
     if response == "1":
         raise RuntimeError(f"File {file_name} already exists. Quitting.")
     elif response == "2":
-        return num_rows
+        # Appending to file
+        if len(all_non_empty_rows) > len(all_rows):
+            # To remove any empty rows at the end of the file, write all non-empty rows back to the file
+            with open(file_name, "w", encoding="utf-8", newline="\n") as event_page_file:
+                writer = csv.writer(event_page_file)
+                for row in all_non_empty_rows:
+                    writer.writerow(row)
+        return num_events
     elif response == "3":
         os.remove(file_name)
         print(f"File {file_name} deleted")
@@ -283,10 +276,16 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
 
     # Loop over all of the URLs
     num_lines_written = 0
+    num_rows_in_contents_file = 0
+    first_row = True
     for i, (num_urls, url) in enumerate(urls):
         # Remove the page file if it already exists
         if i == 0:
             num_rows_in_contents_file = check_contents_file(page_file_path)
+
+        if i < num_rows_in_contents_file:
+            # Skip URLs already processed
+            continue
 
         if not url.strip():
             continue
@@ -302,7 +301,8 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
             image_parser = parser.parse_image_url
         else:
             image_parser = None
-        soup = parse_url_to_soup(url, image_parser, i > 0)
+        soup = parse_url_to_soup(url, image_parser, not first_row)
+        first_row = False
         if soup:
             # Allow parsers to filter out unwanted events
             if hasattr(parser, "content_filter"):
@@ -420,11 +420,11 @@ def serve_urls_from_file(file_name):
     if live_urls:
         # Skip URLs processed previously
         new_urls = sorted(list(set(new_urls) - set(live_urls)))
-        print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
     else:
         print("Warning: Unable to retrieve previously scraped URLs")
 
     new_urls = remove_existing_urls(new_urls, file_name)
+    print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
 
     for url in new_urls:
         yield len(new_urls), url
