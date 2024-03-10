@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from parser_common_code import clean_up_urls
+from basic_utils import clean_up_urls
 
 
 # Append a list of URLs to the end of a file
