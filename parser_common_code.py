@@ -16,9 +16,7 @@ import requests
 from bs4 import BeautifulSoup
 
 import importer_globals as G
-from prior_urls import append_to_prior_urls_file, remove_existing_urls
 from SeleniumLoader import SeleniumLoader
-from upcoming_urls import retrieve_upcoming_urls
 
 MAX_PARSE_TRIES = 3
 EARLIEST_DATE = date(2018, 10, 25)
@@ -403,31 +401,11 @@ def read_urls(file_name):
     num_urls = 0
     with codecs.open(file_name, encoding="utf-8") as input_file:
         while True:
-            url = input_file.readline().strip()
+            url = clean_up_url(input_file.readline())
             if not url:
                 break
             num_urls += 1
             yield url
-
-
-def serve_urls_from_file(file_name):
-    """Return URLs from a file of URLs"""
-    new_urls = [url for url in read_urls(file_name)]
-    num_urls = len(new_urls)
-
-    # Retrieve URLs for upcoming events
-    live_urls = retrieve_upcoming_urls()
-    if live_urls:
-        # Skip URLs processed previously
-        new_urls = sorted(list(set(new_urls) - set(live_urls)))
-    else:
-        print("Warning: Unable to retrieve previously scraped URLs")
-
-    new_urls = remove_existing_urls(new_urls, file_name)
-    print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
-
-    for url in new_urls:
-        yield len(new_urls), url
 
 
 def filter_event_row(csv_row):
@@ -470,58 +448,6 @@ def initialize_csv_dict(url: str) -> dict:
         "all_day_event": "FALSE",
     }
     return csv_dict
-
-
-def write_event_rows_to_import_file(
-    upload_file_name: str, urls_file_name: str, csv_rows: list[dict], max_num_rows: int = 0
-):
-    """Write a list of CSV rows to an importer file
-    This is the last step of the whole process.
-    """
-
-    # Sort the rows by the date in the start_timestamp field
-    csv_rows = sorted(csv_rows, key=lambda x: x["start_timestamp"])
-
-    output_csv = None
-    file_name_no_ext = os.path.splitext(upload_file_name)[0]
-    file_ext = os.path.splitext(upload_file_name)[1]
-    num_rows_left = len(csv_rows)
-    file_num = 0
-    num_rows_written_to_file = 0
-    file_name_to_open = ""
-    writer = None
-    for i, csv_row in enumerate(csv_rows):
-        if (i == 0) or ((max_num_rows != 0) and (i % max_num_rows)):
-            if output_csv:
-                print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
-                output_csv.close()
-                output_csv = None
-
-            # Open the output file
-            file_num += 1
-            if max_num_rows:
-                file_name_to_open = f"{file_name_no_ext}_{file_num:03d}{file_ext}"
-            else:
-                file_name_to_open = upload_file_name
-            output_csv = open(file_name_to_open, "w", encoding="utf-8", newline="\n")
-            num_rows_written_to_file = 0
-
-            # Write column header row
-            writer = csv.writer(output_csv)
-            writer.writerow([CSV_COLUMNS[key] for key in CSV_COLUMNS_ORDERED])
-
-        # Append this row to the Events Calendar CSV file
-        if writer:
-            writer.writerow([csv_row.get(key, "") for key in CSV_COLUMNS_ORDERED])
-            num_rows_written_to_file += 1
-
-    if output_csv:
-        print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
-        output_csv.close()
-        urls = [row["event_website"] for row in csv_rows]
-
-        # Append the URLs to the file with previously scraped URLs
-        append_to_prior_urls_file(urls, urls_file_name)
 
 
 def remove_all(string_to_alter, matches):
@@ -744,7 +670,80 @@ def is_relevant_to_site_as_accompanied(haystack: typing.Iterable[str]) -> bool:
     return is_relevant
 
 
-def replace_pattern(s: str, p_original: str, p_replace: str) -> str:
-    while p_original in s:  # Repeat replacement as long as the original pattern exists
-        s = s.replace(p_original, p_replace)
-    return s
+def replace_pattern(original_string: str, p_original: str, p_replace: str) -> str:
+    """Replace a pattern in a string with another pattern
+
+    Args:
+        original_string (str): original string
+        p_original (str): original pattern
+        p_replace (str): replacement pattern
+
+    Returns:
+        str: string with the original pattern replaced by the replacement pattern
+    """
+    while p_original in original_string:  # Repeat replacement as long as the original pattern exists
+        original_string = original_string.replace(p_original, p_replace)
+    return original_string
+
+
+def clean_up_url(url: str) -> str:
+    """Clean up a URL by removing whitespace and trailing slashes
+
+    Args:
+        url: A URL
+
+    Returns:
+        A cleaned up URL
+    """
+    return url.strip().removesuffix("/")
+
+
+def clean_up_urls(urls: list[str]) -> list[str]:
+    """Clean up URLs by removing whitespace and trailing slashes
+
+    Args:
+        urls (list[str]): A list of URLs
+
+    Returns:
+        list[str]: A list of cleaned up URLs
+    """
+    return [clean_up_url(url) for url in urls if url.strip()]
+
+
+def retrieve_upcoming_urls() -> list[str]:
+    """Retrieve the URLs of the upcoming events from a MySQL database view"""
+    # Reading database credentials from environment variables
+    host = os.getenv("WEBSITE_DB_HOST")
+    user = os.getenv("WEBSITE_DB_USER")
+    password = os.getenv("WEBSITE_DB_PASSWORD")
+    database = os.getenv("WEBSITE_DB_NAME")
+    view_name = "upcoming_events_view"
+
+    # Print out all connection parameters for debugging
+    print(f"host: {host}, user: {user}, password: {password}, database: {database}")
+    print(f"Reading existing URLs from the database")
+    try:
+        # Connect to the database
+        connection = mysql.connector.connect(host=host, user=user, password=password, database=database)
+        cursor = connection.cursor()
+    except Exception as e:
+        print(f"Error connecting to the database: {e}")
+        return list()
+
+    try:
+        # Query the database
+        cursor.execute(f"SELECT event_url FROM {view_name}")
+        rows = cursor.fetchall()
+    except Exception as e:
+        print(f"Error querying the database: {e}")
+        return list()
+    finally:
+        # Close the connection
+        cursor.close()
+        connection.close()
+
+    if not rows:
+        return list()
+
+    # Return the URLs
+    return [clean_up_url(row[0]) for row in rows]

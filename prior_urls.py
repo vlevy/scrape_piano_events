@@ -1,5 +1,7 @@
 from pathlib import Path
 
+from parser_common_code import clean_up_urls
+
 
 # Append a list of URLs to the end of a file
 # This is done when we are saving the csv file for uploading to the website
@@ -8,10 +10,7 @@ def append_to_prior_urls_file(urls: list[str], file_name: str) -> None:
     existing_urls = _read_urls_from_file(file_name)
 
     # Combine the existing URLs with the new URLs
-    all_urls = sorted(list(set(existing_urls + urls)))
-
-    # Strip whitespace from the URLs
-    all_urls = [url.strip() for url in all_urls if url.strip()]
+    all_urls = clean_up_urls(sorted(list(set(existing_urls + urls))))
 
     # Write the URLs to the file
     prior_file_name = _create_prior_file_name(file_name)
@@ -23,7 +22,8 @@ def append_to_prior_urls_file(urls: list[str], file_name: str) -> None:
 # Take a list of URLs and remove ones that are already in the file
 # This is done when we are about to scrape websites and want to avoid scraping URLs we have already scraped
 def remove_existing_urls(urls: list[str], file_name: str) -> list[str]:
-    existing_urls = _read_urls_from_file(file_name)
+    existing_urls = clean_up_urls(_read_urls_from_file(file_name))
+    urls = clean_up_urls(urls)
     return sorted(list(set(urls) - set(existing_urls)))
 
 
@@ -33,7 +33,7 @@ def _read_urls_from_file(file_name: str) -> list[str]:
 
     try:
         with open(prior_file_name, "r") as f:
-            return [l.strip() for l in f.readlines()]
+            return clean_up_urls(f.readlines())
     except FileNotFoundError:
         return []
 

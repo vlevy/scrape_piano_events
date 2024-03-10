@@ -22,17 +22,38 @@ from NinetySecondsStreetYParser import NinetySecondStreetYParser
 from NjPacParser import NjPacParser
 from NyplParser import NyplParser
 from parser_common_code import (
+    clean_up_urls,
     data_path,
     parse_pages_to_events,
-    serve_urls_from_file,
-    write_event_rows_to_import_file,
+    read_urls,
+    retrieve_upcoming_urls,
     write_pages_to_soup_file,
 )
-from prior_urls import append_to_prior_urls_file
+from prior_urls import append_to_prior_urls_file, remove_existing_urls
 from ScandinaviaHouseParser import ScandinaviaHouseParser
 from SpectrumParser import SpectrumParser
 from SymphonySpaceParser import SymphonySpaceParser
 from ZincParser import ZincParser
+
+
+def serve_urls_from_file(file_name):
+    """Return URLs from a file of URLs"""
+    new_urls = [url for url in read_urls(file_name)]
+    num_urls = len(new_urls)
+
+    # Retrieve URLs for upcoming events
+    live_urls = retrieve_upcoming_urls()
+    if live_urls:
+        # Skip URLs processed previously
+        new_urls = sorted(list(set(new_urls) - set(live_urls)))
+    else:
+        print("Warning: Unable to retrieve previously scraped URLs")
+
+    new_urls = remove_existing_urls(new_urls, file_name)
+    print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
+
+    for url in new_urls:
+        yield len(new_urls), url
 
 
 def process_events(
@@ -79,7 +100,6 @@ if __name__ == "__main__":
     venue = "JAZZ_ORG"  # Last used 2023-08-10
     venue = "MANNES"  # Last used September 17 2023
     venue = "LINCOLN_CENTER"  # Last import 2023-10-23
-    venue = "NJPAC"  # Last used Oct 28 2023
     venue = "CMS"  # Last used 2023-10-29
     venue = "MSM"  # Last used Dec 18 2023
     venue = "EVENTBRITE"  # Last used February 24 2024
@@ -87,8 +107,9 @@ if __name__ == "__main__":
     venue = "JUILLIARD"  # Last used March 1 2024
     venue = "CARNEGIE"  # Last used March 2 2024
     venue = "KAUFMAN"  # March 9 2024
+    venue = "NJPAC"  # Last used March 10 2024
 
-    LIVE_READ_FROM_URLS = False
+    LIVE_READ_FROM_URLS = True
 
     @dataclass
     class VenueInfo:
@@ -143,7 +164,7 @@ if __name__ == "__main__":
         # For a parser that has a read_urls method, call it to create the URLs file
         # (URLs are returned for debugging)
         if hasattr(info.parser, "read_urls") and LIVE_READ_FROM_URLS:
-            urls = info.parser.read_urls(url_file_path)
+            urls = clean_up_urls(info.parser.read_urls(url_file_path))
 
         # Now call process_events with the relevant info
         csv_rows = process_events(
@@ -157,3 +178,55 @@ if __name__ == "__main__":
         write_event_rows_to_import_file(importer_file_path, url_file_path, csv_rows, max_num_rows=0)
 
     print(f"Done. {len(csv_rows or [])} events written total.")
+
+
+def write_event_rows_to_import_file(
+    upload_file_name: str, urls_file_name: str, csv_rows: list[dict], max_num_rows: int = 0
+):
+    """Write a list of CSV rows to an importer file
+    This is the last step of the whole process.
+    """
+
+    # Sort the rows by the date in the start_timestamp field
+    csv_rows = sorted(csv_rows, key=lambda x: x["start_timestamp"])
+
+    output_csv = None
+    file_name_no_ext = os.path.splitext(upload_file_name)[0]
+    file_ext = os.path.splitext(upload_file_name)[1]
+    num_rows_left = len(csv_rows)
+    file_num = 0
+    num_rows_written_to_file = 0
+    file_name_to_open = ""
+    writer = None
+    for i, csv_row in enumerate(csv_rows):
+        if (i == 0) or ((max_num_rows != 0) and (i % max_num_rows)):
+            if output_csv:
+                print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
+                output_csv.close()
+                output_csv = None
+
+            # Open the output file
+            file_num += 1
+            if max_num_rows:
+                file_name_to_open = f"{file_name_no_ext}_{file_num:03d}{file_ext}"
+            else:
+                file_name_to_open = upload_file_name
+            output_csv = open(file_name_to_open, "w", encoding="utf-8", newline="\n")
+            num_rows_written_to_file = 0
+
+            # Write column header row
+            writer = csv.writer(output_csv)
+            writer.writerow([CSV_COLUMNS[key] for key in CSV_COLUMNS_ORDERED])
+
+        # Append this row to the Events Calendar CSV file
+        if writer:
+            writer.writerow([csv_row.get(key, "") for key in CSV_COLUMNS_ORDERED])
+            num_rows_written_to_file += 1
+
+    if output_csv:
+        print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
+        output_csv.close()
+        urls = [row["event_website"] for row in csv_rows]
+
+        # Append the URLs to the file with previously scraped URLs
+        append_to_prior_urls_file(urls, urls_file_name)

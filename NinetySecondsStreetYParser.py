@@ -5,7 +5,6 @@ from EventParser import EventParser
 from parser_common_code import (
     initialize_csv_dict,
     parse_event_tags,
-    serve_urls_from_file,
     set_start_end_fields_from_start_dt,
 )
 
