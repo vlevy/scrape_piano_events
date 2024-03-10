@@ -27,37 +27,8 @@ COLLABORATIVE_HINTS = (
     "kaufman-music-center-concerto-competition",
 )
 
-LIVE_READ = False
-
 
 class KaufmanParser(EventParser):
-
-    @staticmethod
-    def read_urls(url_file_name):
-        """Read the event-page URLs for the first 10 pages of piano events in Manhattan"""
-        urls = []
-        month = datetime.today().month
-        year = datetime.today().year
-
-        for page in range(12):
-            url = f"https://www.kaufmanmusiccenter.org/kc/calendar/{year}/{month:02d}/"
-            print("Reading URL {0}".format(url))
-            soup = parse_url_to_soup(url)
-            urls_this_month = [
-                a["href"] for a in soup.find_all("a", attrs={"class": "entry"}) if "/mch/event/" in a["href"]
-            ]
-            urls += urls_this_month
-            month += 1
-            if month >= 13:
-                month = 1
-                year += 1
-
-        # Write the URLs out to a file for safekeeping
-        with open(url_file_name, "w", newline="\n") as url_file:
-            for url in urls:
-                url_file.write(url + "\n")
-
-        return urls
 
     @staticmethod
     def parse_soup_to_event(url, soup):
@@ -69,10 +40,20 @@ class KaufmanParser(EventParser):
         csv_dict = initialize_csv_dict(url)
 
         # Event JSON
-        event_json_str = soup.find("script", attrs={"type": "application/ld+json"}).contents[0]
+        event_json_list = soup.find_all("script", attrs={"type": "application/ld+json"})
+        if len(event_json_list) < 1:
+            print("Skipping because no JSON script was found")
+            return None
+        elif len(event_json_list) > 1:
+            raise RuntimeError("Multiple JSON scripts found")
+
+        event_json_str = str(event_json_list[0].contents)
+        event_json_str = event_json_str.replace("\\n", "\n").replace("\\t", " ").replace("\\r", "\n").replace("'", "")
         event_json_str = event_json_str.replace('"offers": \n  \n  "', '"\n  ')
+
         try:
             event_json = json.loads(event_json_str, strict=False)  # Allows newlines in quoted strings
+            event_json = event_json[0]
         except Exception as ex:
             raise
 
