@@ -146,7 +146,7 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
     soup = None
     for i in range(G.NUM_URL_TRIES):
         try:
-            selenium_loader = SeleniumLoader(True)
+            selenium_loader = SeleniumLoader(False)
             soup = selenium_loader.soup_from_url(url)
             del selenium_loader
             selenium_loader = None
