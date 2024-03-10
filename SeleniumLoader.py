@@ -21,7 +21,7 @@ class SeleniumLoader:
         else:
             # Setup Chrome options
             opts = Options()
-            # opts.add_argument('--headless')  # Uncomment if headless is needed
+            opts.add_argument("--headless")  # Uncomment if headless is needed
 
             # Initialize the Chrome Driver using webdriver-manager
             service = Service(ChromeDriverManager().install())

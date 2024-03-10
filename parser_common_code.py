@@ -10,12 +10,13 @@ from pathlib import Path
 from time import sleep
 from urllib.request import Request
 
+import mysql
 import requests
 from bs4 import BeautifulSoup
 
 import importer_globals as G
 from basic_utils import clean_up_url
-from prior_urls import append_to_prior_urls_file
+from prior_urls import append_to_prior_urls_file, remove_existing_urls
 from SeleniumLoader import SeleniumLoader
 
 MAX_PARSE_TRIES = 3
