@@ -731,7 +731,11 @@ class EventBriteParser_v2(EventParser):
         try:
             description = "\n".join(str(c) for c in soup.find("div", attrs={"class": "eds-text--left"}).contents)
         except Exception as ex:
-            summary = f"<strong>{event_details['description']}</strong>"
+            try:
+                summary = f"<strong>{event_details['description']}</strong>"
+            except KeyError:
+                print("No description found")
+                return None
             description_paragraphs = [summary, ""]
             description_paragraph_sections = soup.find_all("div", attrs={"class": "structured-content-rich-text"})
             if description_paragraph_sections:
@@ -742,7 +746,8 @@ class EventBriteParser_v2(EventParser):
                         else:
                             description_paragraphs += ""
             else:
-                print("Warning: Only event summary available")
+                print("Skipping event with only event summary available")
+                return None
             description = f"<p>{'</p><p>'.join(description_paragraphs)}</p>"
 
         csv_dict["event_description"] = description
