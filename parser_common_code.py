@@ -6,9 +6,10 @@ import os
 import random
 import re
 import typing
+from http.cookiejar import CookieJar
 from pathlib import Path
 from time import sleep
-from urllib.request import Request
+from urllib.request import HTTPCookieProcessor, Request, build_opener
 
 import mysql
 import requests
@@ -22,6 +23,8 @@ from SeleniumLoader import SeleniumLoader
 MAX_PARSE_TRIES = 3
 EARLIEST_DATE = dt.date(2018, 10, 25)
 EARLIEST_DATE = dt.date.today()
+
+csv.field_size_limit(1000000)
 
 # Event columns in the correct order for importing.
 # UNDERSTAND THIS BEFORE CHANGING THE ORDER.
@@ -164,6 +167,13 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
                     if folder and image_file_name and image_url:
                         if not os.path.isfile(full_image_path):
                             # Read the image file from the server and store it as a file on the local drive
+                            user_agent = (
+                                "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0"
+                            )
+                            headers = {"User-Agent": f"{user_agent}"}
+                            cookie_jar = CookieJar()
+                            opener = build_opener(HTTPCookieProcessor(cookie_jar))
+
                             image_req = Request(image_url, headers=headers)
                             image = opener.open(image_req)
                             raw_image_data = image.read()
@@ -270,6 +280,30 @@ def check_contents_file(file_name: str) -> int:
         raise RuntimeError(f"Invalid response {response}")
 
 
+def manually_input_page(url: str) -> BeautifulSoup:
+    # Print the URL to inform the user
+    print("Please paste the contents of the web page for URL:", url)
+
+    # Capture multi-line input from the user
+    # The user should paste the entire HTML content and press Enter
+    content = []
+    print("Paste the contents here (end with a line containing only 'END'):")
+    while True:
+        line = input()
+        if line == "END":
+            break
+        content.append(line)
+
+    # Join the lines to form the complete HTML document
+    html_content = "\n".join(content)
+
+    # Parse the HTML content with BeautifulSoup
+    soup = BeautifulSoup(html_content, "html.parser")
+
+    # Return the BeautifulSoup object
+    return soup
+
+
 def write_pages_to_soup_file(urls, page_file_path, parser):
     """Parse all the URLs to pages and save them"""
 
@@ -300,8 +334,13 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
             image_parser = parser.parse_image_url
         else:
             image_parser = None
-        soup = parse_url_to_soup(url, image_parser, not first_row)
-        first_row = False
+        if False:
+            soup = manually_input_page(url)
+        else:
+            # Parse the HTML content with BeautifulSoup
+            soup = parse_url_to_soup(url, image_parser, not first_row)
+            first_row = False
+
         if soup:
             # Allow parsers to filter out unwanted events
             if hasattr(parser, "content_filter"):
@@ -364,20 +403,6 @@ def parse_pages_to_events(page_file_path, parser):
             event_rows.append(event_row)
 
     return event_rows
-
-
-def serve_pages_from_url_list(urls):
-    """Return html pages from reading each page in a list of URLs"""
-    # Events
-    nr_succeeded_urls = 0
-    for url in urls:
-        try:
-            soup = parse_url_to_soup(url)
-        except Exception as ex:
-            print("ERROR: Unable to parse url {0}: {1}".format(url, ex))
-            raise
-
-        yield url, soup
 
 
 def serve_pages_from_file(file_name):
@@ -741,6 +766,9 @@ def serve_urls_from_file(file_name):
 
     new_urls = remove_existing_urls(new_urls, file_name)
     print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
+
+    for i, url in enumerate(new_urls):
+        print(f"{i+1}: {url}")
 
     for url in new_urls:
         yield len(new_urls), url
