@@ -92,3 +92,13 @@ class LocationCache:
         if self.connection:
             self.cursor.close()
             self.connection.close()
+
+
+"""
+CREATE TABLE location_table (
+    latitude INT NOT NULL,
+    longitude INT NOT NULL,
+    is_in_nyc BOOLEAN NOT NULL,
+    PRIMARY KEY (latitude, longitude)
+);
+"""
