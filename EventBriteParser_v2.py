@@ -669,11 +669,6 @@ class EventBriteParser_v2(EventParser):
             print("Listing location was not specified")
             return None
 
-        # Don't accept any events outside of New York
-        if not is_in_new_york(latitude, longitude):
-            print("Venue is outside of New York")
-            return None
-
         tags_list = ["EB"]
         # "2018-03-25T17:00:00-04:00"
         try:
@@ -785,5 +780,10 @@ class EventBriteParser_v2(EventParser):
 
         if venue not in EventBriteParser_v2.EXISTING_VENUES:
             print(f"Need to create venue {repr(venue)}")
+
+        # Don't accept any events outside of New York
+        if not is_in_new_york(latitude, longitude, venue):
+            print("Venue is outside of New York")
+            return None
 
         return csv_dict

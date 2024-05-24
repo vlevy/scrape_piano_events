@@ -76,7 +76,7 @@ CSV_COLUMNS = {
 }
 
 
-def is_in_new_york(lat, lon):
+def is_in_new_york(lat: float, lon: float, venue: str):
     """
     Returns whether a lat/lon point is in New York (except Staten Island)
     :param lat:
@@ -90,10 +90,11 @@ def is_in_new_york(lat, lon):
     if not location_cache:
         # Initialize the location cache
         host = os.getenv("WEBSITE_DB_HOST")
-        user = os.getenv("WEBSITE_DB_USER")
-        password = os.getenv("WEBSITE_DB_PASSWORD")
+        user = os.getenv("WEBSITE_DB_USER_WRITE")
+        password = os.getenv("WEBSITE_DB_PASSWORD_WRITE")
         database = os.getenv("WEBSITE_DB_NAME")
-        assert host and user and password and database
+        if not all((host, user, password, database)):
+            raise RuntimeError("Database credentials not set in environment variables")
 
         location_cache = LocationCache(
             host=host,
@@ -103,7 +104,7 @@ def is_in_new_york(lat, lon):
         )
 
     # Check the cache first
-    is_in: bool | None = location_cache.look_up_location(lat, lon)
+    is_in: bool | None = location_cache.look_up_location(lat, lon, venue)
     if is_in:
         return True
     elif is_in is False:
@@ -111,8 +112,11 @@ def is_in_new_york(lat, lon):
 
     # Not in cache, so check the location
     try:
+        print(f"About to call service to look up location {venue}")
         sleep(5)  # Avoid being blocked
-        response = requests.get(url)
+        headers = {"User-Agent": "PIANYC-Event-Checker-Bot/1.0 (+https://www.pianyc.net)"}
+
+        response = requests.get(url, headers=headers)
         response_json = response.json()
     except Exception as e:
         print(f"Error getting location from {url}: {e}")
@@ -128,7 +132,7 @@ def is_in_new_york(lat, lon):
                         is_in = True
 
     # Update the cache
-    location_cache.store_location(lat, lon, is_in)
+    location_cache.store_location(lat, lon, venue, is_in)
 
     return is_in
 
