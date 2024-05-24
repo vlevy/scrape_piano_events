@@ -17,6 +17,7 @@ from bs4 import BeautifulSoup
 
 import importer_globals as G
 from basic_utils import clean_up_url
+from LocationCache import LocationCache
 from prior_urls import append_to_prior_urls_file, remove_existing_urls
 from SeleniumLoader import SeleniumLoader
 
@@ -25,6 +26,8 @@ EARLIEST_DATE = dt.date(2018, 10, 25)
 EARLIEST_DATE = dt.date.today()
 
 csv.field_size_limit(1000000)
+
+location_cache: LocationCache | None = None
 
 # Event columns in the correct order for importing.
 # UNDERSTAND THIS BEFORE CHANGING THE ORDER.
@@ -80,16 +83,54 @@ def is_in_new_york(lat, lon):
     :param lon:
     :return:
     """
-    url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
-    response = requests.get(url).json()
+    global location_cache
 
-    if "address" in response:
-        if "city" in response["address"]:
-            if response["address"]["city"] == "City of New York":
-                if "suburb" in response["address"]:
-                    if response["address"]["suburb"] != "Staten Island":
-                        return True
-    return False
+    url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
+
+    if not location_cache:
+        # Initialize the location cache
+        host = os.getenv("WEBSITE_DB_HOST")
+        user = os.getenv("WEBSITE_DB_USER")
+        password = os.getenv("WEBSITE_DB_PASSWORD")
+        database = os.getenv("WEBSITE_DB_NAME")
+        assert host and user and password and database
+
+        location_cache = LocationCache(
+            host=host,
+            user=user,
+            password=password,
+            database=database,
+        )
+
+    # Check the cache first
+    is_in: bool | None = location_cache.look_up_location(lat, lon)
+    if is_in:
+        return True
+    elif is_in is False:
+        return False
+
+    # Not in cache, so check the location
+    try:
+        sleep(5)  # Avoid being blocked
+        response = requests.get(url)
+        response_json = response.json()
+    except Exception as e:
+        print(f"Error getting location from {url}: {e}")
+        return False
+
+    # Parse the response
+    is_in = False
+    if "address" in response_json:
+        if "city" in response_json["address"]:
+            if response_json["address"]["city"] == "City of New York":
+                if "suburb" in response_json["address"]:
+                    if response_json["address"]["suburb"] != "Staten Island":
+                        is_in = True
+
+    # Update the cache
+    location_cache.store_location(lat, lon, is_in)
+
+    return is_in
 
 
 def parse_file_to_soup(file_path):
@@ -766,7 +807,6 @@ def serve_urls_from_file(file_name):
 
     new_urls = remove_existing_urls(new_urls, file_name)
     print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
-
     for i, url in enumerate(new_urls):
         print(f"{i+1}: {url}")
 
