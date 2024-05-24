@@ -22,6 +22,7 @@ class SeleniumLoader:
             # Setup Chrome options
             opts = Options()
             opts.add_argument("--headless")  # Uncomment if headless is needed
+            opts.add_argument("--log-level=3")  # Set log level to warning or higher severity
 
             # Initialize the Chrome Driver using webdriver-manager
             service = Service(ChromeDriverManager().install())
