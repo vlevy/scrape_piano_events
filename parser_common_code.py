@@ -206,8 +206,8 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
                 # linking directly from our page.
                 # We will upload these files to our server before whe importing the events CSV.
                 folder, image_file_name, image_url = image_downloader(soup)
-                image_file_name = sanitize_filename(image_file_name)
                 if image_file_name:
+                    image_file_name = sanitize_filename(image_file_name)
                     full_image_path = get_full_image_path(folder, image_file_name)
                     if folder and image_file_name and image_url:
                         if not os.path.isfile(full_image_path):
