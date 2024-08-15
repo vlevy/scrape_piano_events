@@ -22,6 +22,7 @@ from parser_common_code import (
 class EventBriteParser_v2(EventParser):
     VENUES = {
         "468 W 143rd St": "Our Lady of Lourdes School",
+        "790 11th Ave": "Klavierhaus",
         "Alianza Dominicana Cultural Center": None,
         "ALPHAVILLE": None,
         "Artists Space": None,
