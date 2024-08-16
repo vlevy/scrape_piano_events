@@ -64,7 +64,6 @@ if __name__ == "__main__":
     """Main program"""
 
     venue = "SYMPHONY_SPACE"  # Last used Oct 9 2019
-    venue = "SPECTRUM"  # Last used Oct 19 2019
     venue = "NYPL"  # Last used Jan 25 2020. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "BIRDLAND"  # Last used Feb 6 2020
@@ -82,9 +81,9 @@ if __name__ == "__main__":
     venue = "MSM"  # Last used March 10 2024
     venue = "BARGEMUSIC"  # Last used April 10 2024
     venue = "MANNES"  # Last used April 16 2024
-    venue = "JUILLIARD"  # Last used April 27 2024
-    venue = "CARNEGIE"  # Last used May 19 2024
-    venue = "EVENTBRITE"  # Last used May 22 2024
+    venue = "EVENTBRITE"  # Last used Aug 3 2024
+    venue = "JUILLIARD"  # Last used August 14 2024
+    venue = "CARNEGIE"  # Last used August 15 2024
 
     LIVE_READ_FROM_URLS = False
 
