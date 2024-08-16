@@ -40,7 +40,9 @@ VENUE_TRANSLATIONS = {
     "Good Shepherd-Faith Presbyterian Church": None,
     "Holy Trinity Lutheran Church": None,
     "Josie Robertson Plaza": "Lincoln Center",
+    "Judy and Arthur Zankel Hall": "Carnegie Hall",
     "Kaufman Dance Studio": "the Juilliard School",
+    "Lincoln Center": None,
     "Lippes Concert Hall in Slee Hall, SUNY": "skip",
     "Livestream": "skip",
     "Madison Avenue Presbyterian Church": None,
@@ -48,7 +50,7 @@ VENUE_TRANSLATIONS = {
     "Mary Seaton Room at Kleinhans Music Hall": "skip",
     "Merkin Hall": "Merkin Concert Hall at Kaufman Music Center",
     "Morse Hall": "the Juilliard School",
-    "Morse Recital Hall": "Morse Hall",
+    "Morse Recital Hall": "the Juilliard School",
     "National Sawdust": "skip",
     "Paul Hall": "the Juilliard School",
     "Peter Jay Sharp Theater": "the Juilliard School",
@@ -155,6 +157,7 @@ class JuilliardParser(EventParser):
             set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
         except Exception as ex:
             print(f"Unable to parse event start time: {ex}")
+            return None
 
         # -----------------------------------
         # Image URL
