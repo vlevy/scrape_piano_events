@@ -25,7 +25,8 @@ class SeleniumLoader:
             opts.add_argument("--log-level=3")  # Set log level to warning or higher severity
 
             # Initialize the Chrome Driver using webdriver-manager
-            service = Service(ChromeDriverManager().install())
+            installer = ChromeDriverManager().install()
+            service = Service(installer)
             self.driver = webdriver.Chrome(service=service, options=opts)
 
     def close(self):
