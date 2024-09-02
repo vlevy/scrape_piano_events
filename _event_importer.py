@@ -64,8 +64,6 @@ if __name__ == "__main__":
     """Main program"""
 
     venue = "SYMPHONY_SPACE"  # Last used Oct 9 2019
-    venue = "NYPL"  # Last used Jan 25 2020. You have to extract the event URLs manually because the listing page
-    # makes it impossible to automate.
     venue = "BIRDLAND"  # Last used Feb 6 2020
     venue = "ZINC-JAZZ"  # Last used July 9 2022
     venue = "SCANDINAVIA_HOUSE"  # Last used Aug 29 2022
@@ -84,6 +82,8 @@ if __name__ == "__main__":
     venue = "CARNEGIE"  # Last used August 15 2024
     venue = "BARGEMUSIC"  # Last used August 15 2024
     venue = "NJPAC"  # Last used August 16 2024
+    venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
+    # makes it impossible to automate.
 
     LIVE_READ_FROM_URLS = False
 
@@ -153,4 +153,4 @@ if __name__ == "__main__":
     if (not LIVE_READ_FROM_URLS) and csv_rows:
         write_event_rows_to_import_file(importer_file_path, url_file_path, csv_rows, max_num_rows=0)
 
-    print(f"Done. {len(csv_rows or [])} events written total.")
+    print(f"Done. {len(csv_rows or [])} events written total to {importer_file_path}.")
