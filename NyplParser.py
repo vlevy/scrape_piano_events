@@ -10,7 +10,12 @@ from parser_common_code import (
 )
 
 # "None" venue translation means key is already correct
-VENUE_TRANSLATIONS = {"96th Street Library": None, "Bruno Walter Auditorium": None, "Ottendorfer Library": None}
+VENUE_TRANSLATIONS = {
+    "96th Street Library": None,
+    "Bruno Walter Auditorium": None,
+    "Ottendorfer Library": None,
+    "Stavros Niarchos Foundation Library": None,
+}
 
 
 class NyplParser(EventParser):
@@ -65,6 +70,30 @@ class NyplParser(EventParser):
 
         # Venue
         page_venue = json_parsed["location"]["name"]
+        if (
+            # Work-around for invalid location coding of Stavros Niarchos Foundation Library
+            page_venue == "Event Center"
+            and (
+                (
+                    "location" in json_parsed
+                    and "streetAddress" in json_parsed["location"]
+                    and json_parsed["location"]["streetAddress"] == "455 Fifth Avenue"
+                )
+                or (
+                    "location" in json_parsed
+                    and "address" in json_parsed["location"]
+                    and "streetAddress" in json_parsed["location"]["address"]
+                    and json_parsed["location"]["address"]["streetAddress"] == "455 Fifth Avenue"
+                )
+                or (
+                    "address" in json_parsed
+                    and "streetAddress" in json_parsed["address"]
+                    and json_parsed["address"]["streetAddress"] == "455 Fifth Avenue"
+                )
+            )
+            or (1 == 1)
+        ):
+            page_venue = "Stavros Niarchos Foundation Library"
         venue = VENUE_TRANSLATIONS[page_venue] or page_venue
         csv_dict["venue_name"] = venue
 
