@@ -83,7 +83,7 @@ VENUE_TRANSLATIONS = {
 
 class JuilliardParser(EventParser):
 
-    def parse_image_url(self, soup) -> str:
+    def parse_image_url(self, soup) -> tuple[str | None, str | None, str | None]:
         try:
             # https://www.juilliard.edu/sites/default/files/styles/wide_640x360/public/events/20180925_JazzKenya_113_EDITED_1.jpg?itok=Thc7xiYw
             image_url_suffix = soup.find("div", attrs={"class": "field--name-field-image"}).find("img").attrs["src"]

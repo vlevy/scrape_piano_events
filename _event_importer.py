@@ -21,6 +21,7 @@ from NinetySecondsStreetYParser import NinetySecondStreetYParser
 from NjPacParser import NjPacParser
 from NyplParser import NyplParser
 from parser_common_code import (
+    append_to_prior_urls_file,
     data_path,
     parse_pages_to_events,
     serve_urls_from_file,
@@ -72,7 +73,6 @@ if __name__ == "__main__":
     venue = "92Y"  # Last used 2022-09-25
     venue = "BLUE_NOTE"  # Last used Octover 19 2021
     venue = "JAZZ_ORG"  # Last used 2023-08-10
-    venue = "LINCOLN_CENTER"  # Last import 2023-10-23
     venue = "CMS"  # Last used 2023-10-29
     venue = "KAUFMAN"  # March 9 2024
     venue = "MSM"  # Last used March 10 2024
@@ -84,6 +84,7 @@ if __name__ == "__main__":
     venue = "NJPAC"  # Last used August 16 2024
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
+    venue = "LINCOLN_CENTER"  # Last import 2024-09-02
 
     LIVE_READ_FROM_URLS = False
 
@@ -146,11 +147,17 @@ if __name__ == "__main__":
         csv_rows = process_events(
             LIVE_READ_FROM_URLS, url_file_path, csv_page_contents_file_path, importer_file_path, info.parser
         )
+
+        if csv_rows:
+            # Append the URLs to the file with previously scraped URLs
+            urls = [r["event_website"] for r in csv_rows]
+            append_to_prior_urls_file(urls, url_file_path)
+
     else:
         raise ValueError(f'Invalid venue: "{venue}"')
 
     # Write rows to the Events Calendar CSV file
     if (not LIVE_READ_FROM_URLS) and csv_rows:
-        write_event_rows_to_import_file(importer_file_path, url_file_path, csv_rows, max_num_rows=0)
+        write_event_rows_to_import_file(importer_file_path, csv_rows, max_num_rows=0)
 
     print(f"Done. {len(csv_rows or [])} events written total to {importer_file_path}.")

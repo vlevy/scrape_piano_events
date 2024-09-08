@@ -702,14 +702,26 @@ def is_relevant_to_site(haystack):
     else:
         haystack = list(haystack)
 
-    # fmt:off
-    is_relevant = any_match(['piano', 'pianos', 'pianist', 'pianists',
-                             'organ', 'organs',
-                             'harpsichord', 'harpsichords',
-                             'fortepiano', 'fortepianos',
-                             'clavichord', 'clavichords', 'celesta', 'celestas'],
-                            haystack)
-    # fmt:on
+    is_relevant = any_match(
+        [
+            "celesta",
+            "celestas",
+            "clavichord",
+            "clavichords",
+            "fortepiano",
+            "fortepianos",
+            "harpsichord",
+            "harpsichords",
+            "organ",
+            "organs",
+            "pianist",
+            "pianists",
+            "piano",
+            "pianos",
+            "yuja",
+        ],
+        haystack,
+    )
 
     return is_relevant
 
@@ -818,9 +830,7 @@ def serve_urls_from_file(file_name):
         yield len(new_urls), url
 
 
-def write_event_rows_to_import_file(
-    upload_file_name: str, urls_file_name: str, csv_rows: list[dict], max_num_rows: int = 0
-):
+def write_event_rows_to_import_file(upload_file_name: str, csv_rows: list[dict], max_num_rows: int = 0):
     """Write a list of CSV rows to an importer file
     This is the last step of the whole process.
     """
@@ -865,6 +875,3 @@ def write_event_rows_to_import_file(
         print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
         output_csv.close()
         urls = [row["event_website"] for row in csv_rows]
-
-        # Append the URLs to the file with previously scraped URLs
-        append_to_prior_urls_file(urls, urls_file_name)
