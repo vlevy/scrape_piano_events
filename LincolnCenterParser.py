@@ -157,6 +157,27 @@ class LincolnCenterParser(EventParser):
 
         return performers
 
+    def extract_festival_string(self, soup_full: BeautifulSoup) -> str:
+
+        # Find the span with class "event-header__festival-tag"
+        festival_span = soup_full.find("span", class_="event-header__festival-tag")
+
+        # Extract the text and the anchor tag
+        if festival_span:
+            text_part = festival_span.get_text(strip=True, separator=" ").split("Part of")[0] + "Part of "
+            anchor_tag = festival_span.find("a")
+            if anchor_tag:
+                anchor_href = anchor_tag["href"]
+                anchor_text = anchor_tag.get_text(strip=True)
+                anchor_string = f'<a href="{anchor_href}">{anchor_text}</a>'
+            else:
+                anchor_string = ""
+
+            # Combine the text and the anchor string
+            return text_part + anchor_string
+
+        return ""
+
     def parse_soup_to_event(self, url, soup):
         # -----------------------------------
         # Easy fields
@@ -201,16 +222,18 @@ class LincolnCenterParser(EventParser):
             print(f"Unable to get the description, skipping")
             return None
 
-        festival_link = soup.find("span", attrs={"class": "event-header__festival-tag"})
-        if festival_link:
+        # Optional festival
+        festival = self.extract_festival_string(soup)
+        if festival:
             description_lines.append("")
-            description_lines.append(str(festival_link))
+            description_lines.append(festival)
 
-        programs = self.extract_programs(soup)
-        if programs:
+        # Program
+        program_lines = self.extract_programs(soup)
+        if program_lines:
             description_lines.append("")
             description_lines.append("<strong>Program</strong>")
-            for program in programs:
+            for program in program_lines:
                 description_lines.append(program)
 
         # Performers
@@ -221,17 +244,17 @@ class LincolnCenterParser(EventParser):
             for performer in performers:
                 description_lines.append(performer)
 
+        # Complete dates for a multi-date event
         if len(dates) > 1:
             description_lines.append("")
             description_lines.append("All performances:")
             for d in dates:
                 description_lines.append(d.strftime("%b %d, %Y %I:%M %p"))
 
+        # Complete description
         csv_dict["event_description"] = "\n".join(description_lines)
 
-        # -----------------------------------
         # Image URL
-        # -----------------------------------
         image_folder, image_file_name, image_url = self.parse_image_url(soup)
         full_image_path = get_full_image_path(image_folder, image_file_name)
         image_file_name = PurePath(full_image_path).name
