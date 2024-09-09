@@ -68,7 +68,7 @@ class LincolnCenterParser(EventParser):
 
             image_url = soup.find("img", attrs={"class": "event-header__image"})["srcset"]
             image_file_name = re.search("/calendar/\d+/(.*)\?", image_url).groups()[0] + ".webp"
-            folder = "Lincoln Center"
+            folder = "Lincoln_Center"
         except Exception as ex:
             image_url = "https://images.lincolncenter.org/image/upload/v1666888004/oning7nr84o4ud1zidzq.jpg"
             folder = None
