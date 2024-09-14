@@ -77,7 +77,6 @@ if __name__ == "__main__":
     venue = "KAUFMAN"  # March 9 2024
     venue = "MSM"  # Last used March 10 2024
     venue = "MANNES"  # Last used April 16 2024
-    venue = "EVENTBRITE"  # Last used Aug 3 2024
     venue = "JUILLIARD"  # Last used August 14 2024
     venue = "CARNEGIE"  # Last used August 15 2024
     venue = "BARGEMUSIC"  # Last used August 15 2024
@@ -85,6 +84,7 @@ if __name__ == "__main__":
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
+    venue = "EVENTBRITE"  # Last used Sep 14 2024
 
     LIVE_READ_FROM_URLS = False
 

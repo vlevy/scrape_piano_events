@@ -654,7 +654,7 @@ class EventBriteParser_v2(EventParser):
 
         # Details are stored in a JSON element
         try:
-            event_json = soup.find_all("script", attrs={"type": "application/ld+json"})[0].contents[0]
+            event_json = soup.find_all("script", attrs={"type": "application/ld+json"})[1].contents[0]
             # Some events have improperly encoded newlines
             event_json = event_json.replace("\t", " ")
             event_details = json.loads(event_json)
