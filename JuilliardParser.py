@@ -41,6 +41,7 @@ VENUE_TRANSLATIONS = {
     "Holy Trinity Lutheran Church": None,
     "Josie Robertson Plaza": "Lincoln Center",
     "Judy and Arthur Zankel Hall": "Carnegie Hall",
+    "Juilliard Station": "the Juilliard School",
     "Kaufman Dance Studio": "the Juilliard School",
     "Lincoln Center": None,
     "Lippes Concert Hall in Slee Hall, SUNY": "skip",

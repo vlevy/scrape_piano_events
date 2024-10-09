@@ -73,18 +73,18 @@ if __name__ == "__main__":
     venue = "92Y"  # Last used 2022-09-25
     venue = "BLUE_NOTE"  # Last used Octover 19 2021
     venue = "JAZZ_ORG"  # Last used 2023-08-10
-    venue = "CMS"  # Last used 2023-10-29
-    venue = "KAUFMAN"  # March 9 2024
     venue = "MSM"  # Last used March 10 2024
-    venue = "MANNES"  # Last used April 16 2024
-    venue = "JUILLIARD"  # Last used August 14 2024
-    venue = "CARNEGIE"  # Last used August 15 2024
-    venue = "BARGEMUSIC"  # Last used August 15 2024
     venue = "NJPAC"  # Last used August 16 2024
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
     venue = "EVENTBRITE"  # Last used Sep 14 2024
+    venue = "BARGEMUSIC"  # Last used Sep 14 2024
+    venue = "CMS"  # Last used Sep 15 2024 DOWNLOADED EVENTS THROUGH JAN 2025 ONLY
+    venue = "CARNEGIE"  # Last used Sept 29 2024
+    venue = "JUILLIARD"  # Last used Oct 1 2024
+    venue = "MANNES"  # Not used but entered manually in early Oct 2024
+    venue = "KAUFMAN"  # Oct 8 2024
 
     LIVE_READ_FROM_URLS = False
 
@@ -97,7 +97,7 @@ if __name__ == "__main__":
     # Dictionary for venue configurations
     venue_configurations = {
         "BARGEMUSIC": VenueInfo(BargemusicParser()),
-        "CARNEGIE": VenueInfo(CarnegieHallParser(), 1, 30.0),
+        "CARNEGIE": VenueInfo(CarnegieHallParser(), 1, 120.0),
         "JUILLIARD": VenueInfo(JuilliardParser()),
         "EVENTBRITE": VenueInfo(EventBriteParser_v2(), None, 1),
         "CMS": VenueInfo(CmsParser()),

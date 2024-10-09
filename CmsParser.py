@@ -1,10 +1,12 @@
+import datetime as dt
 import json
-from datetime import datetime
+from pathlib import PurePath
 
 from bs4 import BeautifulSoup
 
 from EventParser import EventParser
 from parser_common_code import (
+    get_full_image_path,
     initialize_csv_dict,
     parse_event_tags,
     set_start_end_fields_from_start_dt,
@@ -13,39 +15,32 @@ from parser_common_code import (
 VENUE_TRANSLATIONS_FOR_VENUE = {
     "": "Lincoln Center",
     "Alice Tully Hall": "Alice Tully Hall at Lincoln Center",
-    "David Geffen Hall": "David Geffen Hall at Lincoln Center",
     "Daniel and Joanna S. Rose Studio at CMS": "Daniel and Joanna S. Rose Studio at Lincoln Center",
-    "Kaplan Penthouse": "Stanley H. Kaplan Penthouse at Lincoln Center",
-    "Rosemary and Meredith Willson Theater": "Rosemary and Meredith Willson Theater at Juilliard School",
     "Daniel and Joanna S. Rose Studio": "Daniel and Joanna S. Rose Studio at Lincoln Center",
+    "David Geffen Hall": "David Geffen Hall at Lincoln Center",
+    "Kaplan Penthouse": "Stanley H. Kaplan Penthouse at Lincoln Center",
     "Rose Studio at CMS": "Daniel and Joanna S. Rose Studio at Lincoln Center",
     "Rose Studio": "Daniel and Joanna S. Rose Studio at Lincoln Center",
+    "Rosemary and Meredith Willson Theater": "Rosemary and Meredith Willson Theater at Juilliard School",
+    "Stanley H. Kaplan Penthouse": "Stanley H. Kaplan Penthouse at Lincoln Center",
 }
 
 
 class CmsParser(EventParser):
     """Parser for the Chamber Music Society of Lincoln Center"""
 
-    @staticmethod
-    def read_urls():
-        """Read the event-page URLs for the first 10 pages of piano events in Manhattan"""
-        with open("chamber_music_society_urls_spring_2018.txt", encoding="utf-8") as url_file:
-            urls = url_file.readlines()
-
-        return urls
-
     @classmethod
-    def parse_image_url_from_soup(cls, soup: BeautifulSoup):
+    def parse_image_url_from_soup(cls, soup: BeautifulSoup) -> tuple[str | None, str | None, str | None]:
         """
         Parse the image URL and file name from a CMS soup.
         :param soup: Soup to parse
-        :return: image url, image file name
+        :return: folder, image file name, image url
         """
         try:
             image_url = str(soup.find_all("source")[0]["srcset"].split(", ")[0])
         except Exception as ex:
             print("Unable to parse image URL")
-            return None, None
+            return None, None, None
         image_file_name = image_url.split("/")[-1]
 
         if image_file_name.endswith("png"):
@@ -56,13 +51,12 @@ class CmsParser(EventParser):
             image_file_name = image_file_name.replace("?_a=AAAMiAI", "")
             image_file_name = f"{image_file_name}.jpg"
 
-        return image_url, image_file_name
+        return "CMS", image_file_name, image_url
 
     def parse_image_url(self, soup) -> tuple[str | None, str | None, str | None]:
         try:
             # https://res.cloudinary.com/cmslc/image/upload/c_fill,f_auto,g_auto,h_320,q_auto,w_480/v1/Radio/19-20%20Programs/102818_Juho_Pohjonen.jpg
-            image_url, image_file_name = self.parse_image_url_from_soup(soup)
-            folder = "CMS"
+            folder, image_url, image_file_name = self.parse_image_url_from_soup(soup)
         except Exception as ex:
             image_url = "CMS_default.jpg"
             folder = None
@@ -105,31 +99,16 @@ class CmsParser(EventParser):
         # Organizer
         csv_dict["organizer_name"] = "Chamber Music Society of Lincoln Center"
 
-        # When
-        event_when = str(soup.find("p", attrs={"class": "concert-header__date"}).contents[0])
-        parsers = (
-            "%a, %b %d, %Y, %I:%M %p",  # Sun, Jan 28, 2024, 5:00 pm
-            "%A, %B %d %Y, %I:%M %p",
-            "%A, %B %d, %I:%M %p",
-            "%A, %B %d, %Y %I:%M %p",
-            "%A, %B %d, %Y, %I:%M %p",
-            "%B, %d, %Y, %I:%M %p",
-        )
-        for parser in parsers:
-            try:
-                event_dt = datetime.strptime(event_when, parser)
-                # Parsed successfully
-                break
-            except Exception:
-                pass
-        else:
-            print("Unable to parse date: {0}".format(event_when))
-            event_dt = None
-        if event_dt:
-            set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
-        else:
-            # Placeholder start date, so importer will accept it
-            set_start_end_fields_from_start_dt(csv_dict, datetime(2024, 1, 1, 8, 0, 0), minutes=90)
+        # When '2024-12-06T19:30:00Z'
+        event_when_str = str(soup.find("meta", attrs={"class": "swiftype", "name": "start_date"})["content"])
+        event_dt = dt.datetime.strptime(event_when_str, "%Y-%m-%dT%H:%M:%SZ")
+
+        # Check for recurring
+        event_when_human = str(soup.find("meta", attrs={"class": "swiftype", "name": "forced_date"})["content"])
+        recurring = "&" in event_when_human
+
+        # Placeholder start date, so importer will accept it
+        set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
 
         # $<span class="u-large">40</span>.00–$<span class="u-large">80</span>.00
         try:
@@ -147,7 +126,9 @@ class CmsParser(EventParser):
             raise
         csv_dict["event_website"] = url
 
-        _, image_file_name = CmsParser.parse_image_url_from_soup(soup)
+        image_folder, image_file_name, _ = CmsParser.parse_image_url_from_soup(soup)
+        full_image_path = get_full_image_path(image_folder, image_file_name)
+        image_file_name = PurePath(full_image_path).name
         csv_dict["external_image_url"] = image_file_name
 
         # --------------------------------------
@@ -243,9 +224,9 @@ class CmsParser(EventParser):
 
         # Tags
         tags = ["Classical", "Ensemble", "Chamber Music", "Collaborative"]
+        if recurring:
+            tags.append("Recurring")
         parse_event_tags(csv_dict, tags, csv_dict["event_description"])
-        if not event_dt:
-            tags.append("check-date")
         csv_dict["event_tags"] = ",".join(tags)
 
         return csv_dict

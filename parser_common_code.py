@@ -661,7 +661,7 @@ def set_relevant_from_dict(event_dict, include_accompanied=False):
         event_dict["relevant"] = False
         return False
 
-    event_text = event_dict.get("event_description", "") + " " + event_dict.get("event_name", "")
+    event_text = event_dict.get("event_description", "") + " " + event_dict.get("event_name", "") + " " + event_dict.get('event_website', "")
     relevant = is_relevant_to_site(event_text)
     if (not relevant) and include_accompanied:
         relevant = is_relevant_to_site_as_accompanied(event_text)
