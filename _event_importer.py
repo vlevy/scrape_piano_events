@@ -71,7 +71,6 @@ if __name__ == "__main__":
     venue = "BIRDLAND"  # Last used Aug 5 2022
     venue = "92Y"  # Last used 2022-09-25
     venue = "JAZZ_ORG"  # Last used 2023-08-10
-    venue = "MSM"  # Last used March 10 2024
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
@@ -83,9 +82,10 @@ if __name__ == "__main__":
     venue = "KAUFMAN"  # Oct 8 2024
     venue = "EVENTBRITE"  # Last used Oct 20 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
-    venue = "NJPAC"  # Last used August 16 2024
+    venue = "NJPAC"  # Last used Nov 3 2024
+    venue = "MSM"  # Last used Nov 3 2024
 
-    LIVE_READ_FROM_URLS = False
+    LIVE_READ_FROM_URLS = True
 
     @dataclass
     class VenueInfo:
