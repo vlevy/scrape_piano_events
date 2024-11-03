@@ -114,7 +114,9 @@ def is_in_new_york(lat: float, lon: float, venue: str):
     try:
         print(f"About to call service to look up location {venue}")
         sleep(5)  # Avoid being blocked
-        headers = {"User-Agent": "PIANYC-Event-Checker-Bot/1.0 (+https://www.pianyc.net)"}
+        headers = {
+            "User-Agent": "PIANYC-Event-Checker-Bot/1.0 (+https://www.pianyc.net)"
+        }
 
         response = requests.get(url, headers=headers)
         response_json = response.json()
@@ -159,7 +161,9 @@ def sanitize_filename(filename: str) -> str:
     illegal_chars = ["<", ">", ":", '"', "/", "\\", "|", "?", "*"]
 
     # Use a list comprehension to replace each illegal character with an underscore.
-    sanitized = "".join([char if char not in illegal_chars else "_" for char in filename])
+    sanitized = "".join(
+        [char if char not in illegal_chars else "_" for char in filename]
+    )
 
     return sanitized
 
@@ -172,7 +176,9 @@ def sleep_random(normal_seconds: int | None = None):
         normal_seconds = G.SECONDS_TO_WAIT_BETWEEN_URL_READS
 
     if normal_seconds > 0:
-        seconds_to_wait = random.triangular(normal_seconds * 0.5, normal_seconds * 1.5, normal_seconds)
+        seconds_to_wait = random.triangular(
+            normal_seconds * 0.5, normal_seconds * 1.5, normal_seconds
+        )
         if seconds_to_wait > 0:
             print(f"Waiting {seconds_to_wait:1f} seconds before first try")
             sleep(seconds_to_wait)
@@ -212,9 +218,7 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
                     if folder and image_file_name and image_url:
                         if not os.path.isfile(full_image_path):
                             # Read the image file from the server and store it as a file on the local drive
-                            user_agent = (
-                                "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0"
-                            )
+                            user_agent = "Mozilla/5.0 (Windows NT 6.1; Win64; x64; rv:73.0) Gecko/20100101 Firefox/73.0"
                             headers = {"User-Agent": f"{user_agent}"}
                             cookie_jar = CookieJar()
                             opener = build_opener(HTTPCookieProcessor(cookie_jar))
@@ -307,12 +311,15 @@ def check_contents_file(file_name: str) -> int:
     print("3) Overwrite the file")
     response = input("1/2/3: ")
     if response == "1":
-        raise RuntimeError(f"File {file_name} already exists. Quitting.")
+        print(f"File {file_name} already exists. Quitting.")
+        return -1
     elif response == "2":
         # Appending to file
         if len(all_non_empty_rows) > len(all_rows):
             # To remove any empty rows at the end of the file, write all non-empty rows back to the file
-            with open(file_name, "w", encoding="utf-8", newline="\n") as event_page_file:
+            with open(
+                file_name, "w", encoding="utf-8", newline="\n"
+            ) as event_page_file:
                 writer = csv.writer(event_page_file)
                 for row in all_non_empty_rows:
                     writer.writerow(row)
@@ -360,6 +367,9 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
         # Remove the page file if it already exists
         if i == 0:
             num_rows_in_contents_file = check_contents_file(page_file_path)
+            if num_rows_in_contents_file == -1:
+                # User quit
+                return
 
         if i < num_rows_in_contents_file:
             # Skip URLs already processed
@@ -441,8 +451,12 @@ def parse_pages_to_events(page_file_path, parser):
 
             if False:
                 # Limit date not too far into the future
-                if event_row["start_timestamp"] > dt.datetime(year=2022, month=12, day=31):
-                    print(f'Skipping event too far in the future: {event_row["start_timestamp"]}')
+                if event_row["start_timestamp"] > dt.datetime(
+                    year=2022, month=12, day=31
+                ):
+                    print(
+                        f'Skipping event too far in the future: {event_row["start_timestamp"]}'
+                    )
                     continue
 
             event_rows.append(event_row)
@@ -487,7 +501,10 @@ def filter_event_row(csv_row):
         print(f'Skipping irrelevant event "{csv_row["event_name"]}"')
         return None
 
-    if "start_timestamp" in csv_row and csv_row["start_timestamp"].date() < EARLIEST_DATE:
+    if (
+        "start_timestamp" in csv_row
+        and csv_row["start_timestamp"].date() < EARLIEST_DATE
+    ):
         # Skip past events
         print(f"Skipping past event")
         return None
@@ -495,14 +512,20 @@ def filter_event_row(csv_row):
     if "event_name" in csv_row:
         if "<b>" in csv_row["event_name"]:
             print("Filtering bold in title")
-            csv_row["event_name"] = csv_row["event_name"].replace("<b>", "").replace("</b>", "")
+            csv_row["event_name"] = (
+                csv_row["event_name"].replace("<b>", "").replace("</b>", "")
+            )
 
         if "&amp;" in csv_row["event_name"]:
             csv_row["event_name"] = csv_row["event_name"].replace("&amp;", "&")
 
         csv_row["event_name"] = f'IMPORT {csv_row["event_name"]}'
 
-    csv_row["event_description"] = csv_row["event_description"].replace("Join us", "Join").replace("join us", "join")
+    csv_row["event_description"] = (
+        csv_row["event_description"]
+        .replace("Join us", "Join")
+        .replace("join us", "join")
+    )
 
     return csv_row
 
@@ -589,7 +612,9 @@ def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
         tags.add("Premiere")
     if any_match("debut", lower_text):
         tags.add("Debut")
-    if any_match(["symphony", "orchestra"], lower_text):  # Avoid hits on 'Orchestrated', etc.
+    if any_match(
+        ["symphony", "orchestra"], lower_text
+    ):  # Avoid hits on 'Orchestrated', etc.
         tags.add("Orchestra")
         tags.add("Ensemble")
     elif is_relevant_to_site_as_accompanied(lower_text):
@@ -645,7 +670,9 @@ def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
 
 def set_tags_from_dict(csv_dict: dict, tags: list[str] | None = None) -> None:
     """Parse tags from an otherwise complete event dictionary"""
-    event_text = csv_dict.get("event_description", "") + " " + csv_dict.get("event_name", "")
+    event_text = (
+        csv_dict.get("event_description", "") + " " + csv_dict.get("event_name", "")
+    )
     event_tags = csv_dict.get("event_tags", None) or []
     if tags:
         event_tags += tags
@@ -655,13 +682,24 @@ def set_tags_from_dict(csv_dict: dict, tags: list[str] | None = None) -> None:
 
 def set_relevant_from_dict(event_dict, include_accompanied=False):
     """Return whether an event is relevant to the website"""
-    if "start_timestamp" in event_dict and event_dict["start_timestamp"].date() < dt.date.today():
+    if (
+        "start_timestamp" in event_dict
+        and event_dict["start_timestamp"].date() < dt.date.today()
+    ):
         # Past event
-        print(f'Skipping event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}')
+        print(
+            f'Skipping event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}'
+        )
         event_dict["relevant"] = False
         return False
 
-    event_text = event_dict.get("event_description", "") + " " + event_dict.get("event_name", "") + " " + event_dict.get('event_website', "")
+    event_text = (
+        event_dict.get("event_description", "")
+        + " "
+        + event_dict.get("event_name", "")
+        + " "
+        + event_dict.get("event_website", "")
+    )
     relevant = is_relevant_to_site(event_text)
     if (not relevant) and include_accompanied:
         relevant = is_relevant_to_site_as_accompanied(event_text)
@@ -764,7 +802,9 @@ def replace_pattern(original_string: str, p_original: str, p_replace: str) -> st
     Returns:
         str: string with the original pattern replaced by the replacement pattern
     """
-    while p_original in original_string:  # Repeat replacement as long as the original pattern exists
+    while (
+        p_original in original_string
+    ):  # Repeat replacement as long as the original pattern exists
         original_string = original_string.replace(p_original, p_replace)
     return original_string
 
@@ -783,7 +823,9 @@ def retrieve_upcoming_urls() -> list[str]:
     print(f"Reading existing URLs from the database")
     try:
         # Connect to the database
-        connection = mysql.connector.connect(host=host, user=user, password=password, database=database)
+        connection = mysql.connector.connect(
+            host=host, user=user, password=password, database=database
+        )
         cursor = connection.cursor()
     except Exception as e:
         print(f"Error connecting to the database: {e}")
@@ -830,7 +872,9 @@ def serve_urls_from_file(file_name):
         yield len(new_urls), url
 
 
-def write_event_rows_to_import_file(upload_file_name: str, csv_rows: list[dict], max_num_rows: int = 0):
+def write_event_rows_to_import_file(
+    upload_file_name: str, csv_rows: list[dict], max_num_rows: int = 0
+):
     """Write a list of CSV rows to an importer file
     This is the last step of the whole process.
     """
@@ -849,7 +893,9 @@ def write_event_rows_to_import_file(upload_file_name: str, csv_rows: list[dict],
     for i, csv_row in enumerate(csv_rows):
         if (i == 0) or ((max_num_rows != 0) and (i % max_num_rows)):
             if output_csv:
-                print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
+                print(
+                    f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
+                )
                 output_csv.close()
                 output_csv = None
 
@@ -872,6 +918,8 @@ def write_event_rows_to_import_file(upload_file_name: str, csv_rows: list[dict],
             num_rows_written_to_file += 1
 
     if output_csv:
-        print(f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}")
+        print(
+            f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
+        )
         output_csv.close()
         urls = [row["event_website"] for row in csv_rows]

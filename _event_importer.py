@@ -44,7 +44,6 @@ def process_events(
 ):
     """Generic processor for different parsers"""
     if live_read_from_urls:
-
         # Read all the individual page URLs
         print(f"Processing URL file {url_file_path}")
         if url_getter:
@@ -73,7 +72,6 @@ if __name__ == "__main__":
     venue = "92Y"  # Last used 2022-09-25
     venue = "JAZZ_ORG"  # Last used 2023-08-10
     venue = "MSM"  # Last used March 10 2024
-    venue = "NJPAC"  # Last used August 16 2024
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
@@ -85,6 +83,7 @@ if __name__ == "__main__":
     venue = "KAUFMAN"  # Oct 8 2024
     venue = "EVENTBRITE"  # Last used Oct 20 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
+    venue = "NJPAC"  # Last used August 16 2024
 
     LIVE_READ_FROM_URLS = False
 
@@ -145,7 +144,11 @@ if __name__ == "__main__":
 
         # Now call process_events with the relevant info
         csv_rows = process_events(
-            LIVE_READ_FROM_URLS, url_file_path, csv_page_contents_file_path, importer_file_path, info.parser
+            LIVE_READ_FROM_URLS,
+            url_file_path,
+            csv_page_contents_file_path,
+            importer_file_path,
+            info.parser,
         )
 
         if csv_rows:
