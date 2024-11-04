@@ -55,13 +55,21 @@ class MsmParser(EventParser):
         if any_match(COLLABORATIVE_HINTS, url):
             csv_dict["relevant"] = True
 
+        # TEMPORARY all events are relevant for now
+        csv_dict["relevant"] = True
+
         # ----------------------------------------------------------------
         # Description
         #
         content_module = soup.find_all("div", {"class": ("contentModule",)})
         if len(content_module) >= 3:
             full_event_text = "".join(
-                [str(s) for s in soup.find_all("div", {"class": ("contentModule",)})[2].contents]
+                [
+                    str(s)
+                    for s in soup.find_all("div", {"class": ("contentModule",)})[
+                        2
+                    ].contents
+                ]
             )
             csv_dict["event_description"] = full_event_text
         else:
@@ -69,7 +77,9 @@ class MsmParser(EventParser):
 
         # Price
         try:
-            free = soup.find(text="This event is <strong>FREE and open to the public</strong>")
+            free = soup.find(
+                text="This event is <strong>FREE and open to the public</strong>"
+            )
         except AttributeError as ex:
             pass
         else:
@@ -84,7 +94,9 @@ class MsmParser(EventParser):
 
         # Image URL
         try:
-            image_url = soup.find("div", attrs={"class": "imageModule_container"}).contents[1]["src"]
+            image_url = soup.find(
+                "div", attrs={"class": "imageModule_container"}
+            ).contents[1]["src"]
         except AttributeError as ex:
             print("No image URL found")
         else:
