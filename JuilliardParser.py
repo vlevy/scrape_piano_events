@@ -14,9 +14,7 @@ from parser_common_code import (
     set_start_end_fields_from_start_dt,
 )
 
-DEFAULT_JUILLIARD_IMAGE_URL = (
-    "https://www.juilliard.edu/sites/default/files/styles/wide_1920x1080/public/juilliard37_2400x1350.jpg"
-)
+DEFAULT_JUILLIARD_IMAGE_URL = "https://www.juilliard.edu/sites/default/files/styles/wide_1920x1080/public/juilliard37_2400x1350.jpg"
 
 # Venue translations. 'None' means use the name is unchanged from the key.
 VENUE_TRANSLATIONS = {
@@ -34,10 +32,10 @@ VENUE_TRANSLATIONS = {
     "Damrosch Park": "skip",
     "David Geffen Hall": "Lincoln Center",
     "Daniel and Joanna S. Rose Studio": "Lincoln Center",
-    "Dizzy's Club Coca-Cola": None,
-    "Dizzy's Club": "Dizzy's Club Coca-Cola",
+    "Dizzy's Club": None,
     "Glorya Kaufman Dance Studio": "the Juilliard School",
     "Good Shepherd-Faith Presbyterian Church": None,
+    "Hamilton Stage at Union County Performing Arts Center": "skip",
     "Holy Trinity Lutheran Church": None,
     "Josie Robertson Plaza": "Lincoln Center",
     "Judy and Arthur Zankel Hall": "Carnegie Hall",
@@ -83,11 +81,14 @@ VENUE_TRANSLATIONS = {
 
 
 class JuilliardParser(EventParser):
-
     def parse_image_url(self, soup) -> tuple[str | None, str | None, str | None]:
         try:
             # https://www.juilliard.edu/sites/default/files/styles/wide_640x360/public/events/20180925_JazzKenya_113_EDITED_1.jpg?itok=Thc7xiYw
-            image_url_suffix = soup.find("div", attrs={"class": "field--name-field-image"}).find("img").attrs["src"]
+            image_url_suffix = (
+                soup.find("div", attrs={"class": "field--name-field-image"})
+                .find("img")
+                .attrs["src"]
+            )
             image_url = f"https://www.juilliard.edu{image_url_suffix}"
             # Examples: 'https://www.juilliard.edu/sites/default/files/styles/wide_640x360/public/events/image.png?itok=eYF57vEs'
             # Parses to ('image', 'png', 'eYF57vEs')
@@ -122,7 +123,9 @@ class JuilliardParser(EventParser):
         # -----------------------------------
         try:
             event_name_from_page = str(
-                soup.find("h1", attrs={"class": "event-hero-banner__title"}).find("span").contents[0]
+                soup.find("h1", attrs={"class": "event-hero-banner__title"})
+                .find("span")
+                .contents[0]
             )
         except Exception as ex:
             print(f"Skipping {url} because event name was not found")
@@ -131,7 +134,9 @@ class JuilliardParser(EventParser):
         # -----------------------------------
         # Venue
         # -----------------------------------
-        venue_element = soup.find("div", attrs={"class": "field--name-name field__item"})
+        venue_element = soup.find(
+            "div", attrs={"class": "field--name-name field__item"}
+        )
         if venue_element:
             venue_from_page = venue_element.contents[0].strip()
         else:
@@ -153,7 +158,9 @@ class JuilliardParser(EventParser):
 
         # Date/time example: '2019-09-19 19:30:00'
         try:
-            when_start = str(soup.find("var", attrs={"class": "atc_date_start"}).contents[0]).strip()
+            when_start = str(
+                soup.find("var", attrs={"class": "atc_date_start"}).contents[0]
+            ).strip()
             event_dt = dt.datetime.strptime(when_start.strip(), "%Y-%m-%d %H:%M:%S")
             set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
         except Exception as ex:
@@ -175,7 +182,9 @@ class JuilliardParser(EventParser):
         price_element = soup.find("div", attrs={"class": "field--name-field-admission"})
         if price_element:
             admission = "\r\n".join([str(line) for line in price_element.contents])
-            admission_single_line = " ".join([str(line) for line in price_element.contents])
+            admission_single_line = " ".join(
+                [str(line) for line in price_element.contents]
+            )
             price = parse_price_range(admission_single_line)
         csv_dict["event_cost"] = price or 0
 
@@ -188,12 +197,16 @@ class JuilliardParser(EventParser):
             or event_name_from_page == "Pre-College Faculty Recital"
             or any_match(
                 (
-                    "MAP Student Recital",
-                    "MAP Chamber",
                     "Chamber Music Recital",
-                    "Honors Chamber Music",
-                    "Ensemble Connect",
                     "Chamberfest",
+                    "Ensemble Connect",
+                    "Festival of Song",
+                    "Gilbert Kalish",
+                    "Historical Performance Chamber Music",
+                    "Honors Chamber Music",
+                    "Juilliard Songfest",
+                    "MAP Chamber",
+                    "MAP Student Recital",
                     "Vocal Arts",
                 ),
                 event_name_from_page,
@@ -206,8 +219,12 @@ class JuilliardParser(EventParser):
         subtitle = soup.find("div", attrs={"class": "field--name-field-subtitle"})
         if subtitle:
             event_description_rows.append("")
-            event_description_rows += [p.contents[0] for p in subtitle.contents if str(p).strip()]
-        program_list_element = soup.find("div", attrs={"class": "field--name-field-program-information"})
+            event_description_rows += [
+                p.contents[0] for p in subtitle.contents if str(p).strip()
+            ]
+        program_list_element = soup.find(
+            "div", attrs={"class": "field--name-field-program-information"}
+        )
         if program_list_element:
             program_list = program_list_element.contents
             relevant = (
@@ -304,9 +321,7 @@ class JuilliardParser(EventParser):
                     performer_type = "Faculty"
                 else:
                     performer_type = "Student"
-                csv_event_name = (
-                    f"Juilliard {performer_type} Recital: {student}, {instrument} with Collaborative Piano"
-                )
+                csv_event_name = f"Juilliard {performer_type} Recital: {student}, {instrument} with Collaborative Piano"
             else:
                 # Unusual -- possibly piano duo, collaborative, organ or harpsichord
                 csv_event_name = f"Juilliard Student Recital: {student}, {instrument}"
@@ -373,9 +388,13 @@ class JuilliardParser(EventParser):
             if not performers:
                 csv_event_name = "Juilliard Non-Keyboard Pre-College Recitals"
             elif len(performers) > 1:
-                csv_event_name = "Juilliard Pre-College Recitals: {0}".format(",".join(performers))
+                csv_event_name = "Juilliard Pre-College Recitals: {0}".format(
+                    ",".join(performers)
+                )
             else:
-                csv_event_name = "Juilliard Pre-College Recital: {0}".format(performers[0])
+                csv_event_name = "Juilliard Pre-College Recital: {0}".format(
+                    performers[0]
+                )
 
         elif venue == VENUE_TRANSLATIONS[""]:
             # Event is at Juilliard
@@ -388,10 +407,14 @@ class JuilliardParser(EventParser):
                 csv_event_name = f"Juilliard {event_name_from_page}, at {venue}"
 
         if is_precollege:
-            csv_event_name = csv_event_name.replace("Student Recital", "Pre-College Recital")
+            csv_event_name = csv_event_name.replace(
+                "Student Recital", "Pre-College Recital"
+            )
 
         if "Faculty Recital" in event_tags:
-            csv_event_name = csv_event_name.replace("Student Recital", "Faculty Recital")
+            csv_event_name = csv_event_name.replace(
+                "Student Recital", "Faculty Recital"
+            )
             if "Student Recital" in event_tags:
                 event_tags.remove("Student Recital")
             if "Young Performer" in event_tags:
