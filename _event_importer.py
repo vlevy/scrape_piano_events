@@ -77,15 +77,15 @@ if __name__ == "__main__":
     venue = "BARGEMUSIC"  # Last used Sep 14 2024
     venue = "CMS"  # Last used Sep 15 2024 DOWNLOADED EVENTS THROUGH JAN 2025 ONLY
     venue = "CARNEGIE"  # Last used Sept 29 2024
-    venue = "JUILLIARD"  # Last used Oct 1 2024
     venue = "MANNES"  # Not used but entered manually in early Oct 2024
     venue = "KAUFMAN"  # Oct 8 2024
     venue = "EVENTBRITE"  # Last used Oct 20 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
     venue = "NJPAC"  # Last used Nov 3 2024
     venue = "MSM"  # Last used Nov 3 2024
+    venue = "JUILLIARD"  # Last used Nov 3 2024
 
-    LIVE_READ_FROM_URLS = True
+    LIVE_READ_FROM_URLS = False
 
     @dataclass
     class VenueInfo:
