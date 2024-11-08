@@ -10,6 +10,7 @@ from http.cookiejar import CookieJar
 from pathlib import Path
 from time import sleep
 from urllib.request import HTTPCookieProcessor, Request, build_opener
+from urllib.robotparser import RobotFileParser
 
 import mysql
 import requests
@@ -363,19 +364,32 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
     num_lines_written = 0
     num_rows_in_contents_file = 0
     first_row = True
+    robot_parser: RobotFileParser | None = None
+    user_agent = "PIANYC-Event-Importer/1.0 Non-commercial PIANYC supports NYC piano events and culture (+https://www.pianyc.net/about/)"
+
     for i, (num_urls, url) in enumerate(urls):
         # Remove the page file if it already exists
         if i == 0:
+            # Check for an existing contents file
             num_rows_in_contents_file = check_contents_file(page_file_path)
             if num_rows_in_contents_file == -1:
                 # User quit
                 return
+
+            # Read the robots.txt file
+            robot_parser = RobotFileParser(url)
+            robot_parser.read()
 
         if i < num_rows_in_contents_file:
             # Skip URLs already processed
             continue
 
         if not url.strip():
+            continue
+
+        # Skip URLs that are disallowed by the robots.txt file
+        if not robot_parser.can_fetch(user_agent, url):
+            print(f"Skipping disallowed URL {url}")
             continue
 
         if False:
