@@ -64,7 +64,6 @@ if __name__ == "__main__":
     """Main program"""
 
     venue = "SYMPHONY_SPACE"  # Last used Oct 9 2019
-    venue = "BIRDLAND"  # Last used Feb 6 2020
     venue = "ZINC-JAZZ"  # Last used July 9 2022
     venue = "SCANDINAVIA_HOUSE"  # Last used Aug 29 2022
     venue = "NATIONAL_SAWDUST"  # Last used Aug 4 2022
@@ -76,14 +75,14 @@ if __name__ == "__main__":
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
     venue = "BARGEMUSIC"  # Last used Sep 14 2024
     venue = "CMS"  # Last used Sep 15 2024 DOWNLOADED EVENTS THROUGH JAN 2025 ONLY
-    venue = "CARNEGIE"  # Last used Sept 29 2024
     venue = "MANNES"  # Not used but entered manually in early Oct 2024
     venue = "KAUFMAN"  # Oct 8 2024
-    venue = "EVENTBRITE"  # Last used Oct 20 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
     venue = "NJPAC"  # Last used Nov 3 2024
     venue = "MSM"  # Last used Nov 3 2024
     venue = "JUILLIARD"  # Last used Nov 3 2024
+    venue = "CARNEGIE"  # Last used Nov 6 2024
+    venue = "EVENTBRITE"  # Last used Oct 20 2024
 
     LIVE_READ_FROM_URLS = False
 
