@@ -77,9 +77,9 @@ if __name__ == "__main__":
     venue = "NJPAC"  # Last used Nov 3 2024
     venue = "MSM"  # Last used Nov 3 2024
     venue = "CARNEGIE"  # Last used Nov 6 2024
-    venue = "EVENTBRITE"  # Last used Oct 20 2024
     venue = "JUILLIARD"  # Last used Nov 15 2024
-    venue = "92Y"  # Last used 2022-09-25
+    venue = "92Y"  # Last used Nov 17 2024
+    venue = "EVENTBRITE"  # Last used Nov 17 2024
 
     LIVE_READ_FROM_URLS = False
 
