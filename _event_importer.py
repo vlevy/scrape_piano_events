@@ -36,9 +36,6 @@ from ZincParser import ZincParser
 
 def process_events(
     live_read_from_urls: bool,
-    url_file_name: str,
-    csv_page_contents_file_name: str,
-    importer_file_name: str,
     parser: EventParser,
     url_getter: Callable | None = None,
 ):
@@ -68,7 +65,6 @@ if __name__ == "__main__":
     venue = "SCANDINAVIA_HOUSE"  # Last used Aug 29 2022
     venue = "NATIONAL_SAWDUST"  # Last used Aug 4 2022
     venue = "BIRDLAND"  # Last used Aug 5 2022
-    venue = "92Y"  # Last used 2022-09-25
     venue = "JAZZ_ORG"  # Last used 2023-08-10
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
@@ -80,9 +76,10 @@ if __name__ == "__main__":
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
     venue = "NJPAC"  # Last used Nov 3 2024
     venue = "MSM"  # Last used Nov 3 2024
-    venue = "JUILLIARD"  # Last used Nov 3 2024
     venue = "CARNEGIE"  # Last used Nov 6 2024
     venue = "EVENTBRITE"  # Last used Oct 20 2024
+    venue = "JUILLIARD"  # Last used Nov 15 2024
+    venue = "92Y"  # Last used 2022-09-25
 
     LIVE_READ_FROM_URLS = False
 
@@ -144,9 +141,6 @@ if __name__ == "__main__":
         # Now call process_events with the relevant info
         csv_rows = process_events(
             LIVE_READ_FROM_URLS,
-            url_file_path,
-            csv_page_contents_file_path,
-            importer_file_path,
             info.parser,
         )
 
