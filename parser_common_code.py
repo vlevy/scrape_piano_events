@@ -387,10 +387,11 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
         if not url.strip():
             continue
 
-        # Skip URLs that are disallowed by the robots.txt file
-        if not robot_parser.can_fetch(user_agent, url):
-            print(f"Skipping disallowed URL {url}")
-            continue
+        if False:
+            # Skip URLs that are disallowed by the robots.txt file
+            if not robot_parser.can_fetch(user_agent, url):
+                print(f"Skipping disallowed URL {url}")
+                continue
 
         if False:
             # Filter rows. Set lower limit to the number we were hung on previously.
@@ -464,12 +465,17 @@ def parse_pages_to_events(page_file_path, parser):
                 continue
 
             if False:
-                # Limit date not too far into the future
-                if event_row["start_timestamp"] > dt.datetime(
-                    year=2022, month=12, day=31
+                # Accept events only in an acceptable time window
+                # Compare with two datetime objects, one at the earliest permitted time, and one at the latest
+                earliest_permitted_time = dt.datetime(year=2025, month=3, day=1)
+                latest_permitted_time = dt.datetime(year=2030, month=3, day=1)
+                if not (
+                    earliest_permitted_time
+                    <= event_row["start_timestamp"]
+                    < latest_permitted_time
                 ):
                     print(
-                        f'Skipping event too far in the future: {event_row["start_timestamp"]}'
+                        f'Skipping event not in time window: {event_row["start_timestamp"]}'
                     )
                     continue
 
