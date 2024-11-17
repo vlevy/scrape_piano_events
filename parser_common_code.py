@@ -30,6 +30,8 @@ csv.field_size_limit(1000000)
 
 location_cache: LocationCache | None = None
 
+last_location_check_dt: dt.datetime | None = None
+
 # Event columns in the correct order for importing.
 # UNDERSTAND THIS BEFORE CHANGING THE ORDER.
 CSV_COLUMNS_ORDERED = (
@@ -85,7 +87,7 @@ def is_in_new_york(lat: float, lon: float, venue: str):
     :return:
     """
     global location_cache
-
+    global last_location_check_dt
     url = f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lon}"
 
     if not location_cache:
@@ -112,15 +114,27 @@ def is_in_new_york(lat: float, lon: float, venue: str):
         return False
 
     # Not in cache, so check the location
+    MIN_SECONDS_TO_WAIT_SINCE_LAST_CHECK = 5
+    if last_location_check_dt is not None:
+        seconds_since_last_check = (
+            dt.datetime.now() - last_location_check_dt
+        ).total_seconds()
+        seconds_to_wait = (
+            MIN_SECONDS_TO_WAIT_SINCE_LAST_CHECK - seconds_since_last_check
+        )
+        if seconds_to_wait > 0:
+            print(f"Waiting {seconds_to_wait} seconds before next check")
+            sleep(seconds_to_wait)
+
     try:
-        print(f"About to call service to look up location {venue}")
-        sleep(5)  # Avoid being blocked
+        print(f"Calling service to look up location {venue}")
         headers = {
             "User-Agent": "PIANYC-Event-Checker-Bot/1.0 (+https://www.pianyc.net)"
         }
 
         response = requests.get(url, headers=headers)
         response_json = response.json()
+        last_location_check_dt = dt.datetime.now()
     except Exception as e:
         print(f"Error getting location from {url}: {e}")
         return False
