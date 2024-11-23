@@ -1,6 +1,7 @@
 import datetime as dt
 import json
-from pathlib import PurePath
+import re
+from pathlib import Path, PurePath
 
 from bs4 import BeautifulSoup
 
@@ -30,18 +31,23 @@ class CmsParser(EventParser):
     """Parser for the Chamber Music Society of Lincoln Center"""
 
     @classmethod
-    def parse_image_url_from_soup(cls, soup: BeautifulSoup) -> tuple[str | None, str | None, str | None]:
+    def parse_image_url_from_soup(
+        cls, soup: BeautifulSoup
+    ) -> tuple[str | None, str | None, str | None]:
         """
         Parse the image URL and file name from a CMS soup.
         :param soup: Soup to parse
         :return: folder, image file name, image url
         """
         try:
+            # A sample image URL from the actual page
+            # https://res.cloudinary.com/cmslc/image/upload/c_fill,g_auto,h_500,w_750/f_auto/q_auto/v1474562258/Education%20Images/YMC_thumbnail?_a=AAAMiAI
             image_url = str(soup.find_all("source")[0]["srcset"].split(", ")[0])
         except Exception as ex:
             print("Unable to parse image URL")
             return None, None, None
         image_file_name = image_url.split("/")[-1]
+        image_uid = re.search(r"/q_auto/(v\d+)", image_url).group(1)
 
         if image_file_name.endswith("png"):
             # WordPress imports .png files and saves them as .jpg files
@@ -51,12 +57,18 @@ class CmsParser(EventParser):
             image_file_name = image_file_name.replace("?_a=AAAMiAI", "")
             image_file_name = f"{image_file_name}.jpg"
 
+        # Insert the image UID into the image file name, using the original extension
+        image_file_path = Path(image_file_name)
+        image_file_name = str(
+            image_file_path.with_suffix(f".{image_uid}{image_file_path.suffix}")
+        )
+
         return "CMS", image_file_name, image_url
 
     def parse_image_url(self, soup) -> tuple[str | None, str | None, str | None]:
         try:
             # https://res.cloudinary.com/cmslc/image/upload/c_fill,f_auto,g_auto,h_320,q_auto,w_480/v1/Radio/19-20%20Programs/102818_Juho_Pohjonen.jpg
-            folder, image_url, image_file_name = self.parse_image_url_from_soup(soup)
+            folder, image_file_name, image_url = self.parse_image_url_from_soup(soup)
         except Exception as ex:
             image_url = "CMS_default.jpg"
             folder = None
@@ -79,9 +91,17 @@ class CmsParser(EventParser):
         # Venue
         venue = None
         try:
-            venue = str(soup.find("p", attrs={"class": "concert-header__venue"}).contents[0])
+            venue = str(
+                soup.find("p", attrs={"class": "concert-header__venue"}).contents[0]
+            )
         except Exception as ex:
-            for i, c in enumerate(json.loads(soup.find("script", attrs={"type": "application/ld+json"}).contents[0])):
+            for i, c in enumerate(
+                json.loads(
+                    soup.find("script", attrs={"type": "application/ld+json"}).contents[
+                        0
+                    ]
+                )
+            ):
                 if "url" in c and "location" in c and url in c["url"]:
                     # Found the venue in the alternate location
                     venue = c["location"]
@@ -100,11 +120,19 @@ class CmsParser(EventParser):
         csv_dict["organizer_name"] = "Chamber Music Society of Lincoln Center"
 
         # When '2024-12-06T19:30:00Z'
-        event_when_str = str(soup.find("meta", attrs={"class": "swiftype", "name": "start_date"})["content"])
+        event_when_str = str(
+            soup.find("meta", attrs={"class": "swiftype", "name": "start_date"})[
+                "content"
+            ]
+        )
         event_dt = dt.datetime.strptime(event_when_str, "%Y-%m-%dT%H:%M:%SZ")
 
         # Check for recurring
-        event_when_human = str(soup.find("meta", attrs={"class": "swiftype", "name": "forced_date"})["content"])
+        event_when_human = str(
+            soup.find("meta", attrs={"class": "swiftype", "name": "forced_date"})[
+                "content"
+            ]
+        )
         recurring = "&" in event_when_human
 
         # Placeholder start date, so importer will accept it
@@ -114,9 +142,9 @@ class CmsParser(EventParser):
         try:
             event_costs = [
                 eval(s.contents[0])
-                for s in soup.find("div", attrs={"class": "production-header__price"}).find_all(
-                    "span", attrs={"class": "u-large"}
-                )
+                for s in soup.find(
+                    "div", attrs={"class": "production-header__price"}
+                ).find_all("span", attrs={"class": "u-large"})
             ]
         except Exception as ex:
             event_costs = [0]
@@ -144,7 +172,8 @@ class CmsParser(EventParser):
                         and hasattr(inner_content, "find_all")
                         and inner_content.find_all()
                         and inner_content.find_all()[0].has_key("class")
-                        and inner_content.find_all()[0]["class"][0] == "program-panel__composer__name"
+                        and inner_content.find_all()[0]["class"][0]
+                        == "program-panel__composer__name"
                     ):
                         if len(inner_content.contents) == 1:
                             composer = f"<p><h4>{inner_content.contents[0].contents[0]}</h4></p>"
@@ -162,11 +191,17 @@ class CmsParser(EventParser):
 
         # Description
         description_list = list()
-        add_section_to_description(soup.find("div", attrs={"class": "content-panel__body"}))
+        add_section_to_description(
+            soup.find("div", attrs={"class": "content-panel__body"})
+        )
         description_list.append("\n\n<h2>Program</h2>")
-        add_section_to_description(soup.find("div", attrs={"class": "program-panel__list"}))
+        add_section_to_description(
+            soup.find("div", attrs={"class": "program-panel__list"})
+        )
         description_list.append("\n\n<h2>Performers</h2>")
-        add_section_to_description(soup.find("div", attrs={"class": "people-panel__list"}))
+        add_section_to_description(
+            soup.find("div", attrs={"class": "people-panel__list"})
+        )
 
         description = "".join(description_list)
         csv_dict["event_description"] = description
@@ -215,8 +250,12 @@ class CmsParser(EventParser):
         # #--------------------------------------
 
         # Name
-        name_from_page = soup.find("h1", attrs={"class": "concert-header__title"}).contents[0]
-        event_name = "Chamber Music Society of Lincoln Center, {0}".format(name_from_page)
+        name_from_page = soup.find(
+            "h1", attrs={"class": "concert-header__title"}
+        ).contents[0]
+        event_name = "Chamber Music Society of Lincoln Center, {0}".format(
+            name_from_page
+        )
         # if False and pianists:
         #     # Call out the pianists
         #     event_name = '{0}; {1}, Piano'.format(event_name, ' and '.join(pianists))

@@ -70,7 +70,6 @@ if __name__ == "__main__":
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
     venue = "BARGEMUSIC"  # Last used Sep 14 2024
-    venue = "CMS"  # Last used Sep 15 2024 DOWNLOADED EVENTS THROUGH JAN 2025 ONLY
     venue = "MANNES"  # Not used but entered manually in early Oct 2024
     venue = "KAUFMAN"  # Oct 8 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
@@ -80,6 +79,7 @@ if __name__ == "__main__":
     venue = "JUILLIARD"  # Last used Nov 15 2024
     venue = "92Y"  # Last used Nov 17 2024
     venue = "EVENTBRITE"  # Last used Nov 17 2024
+    venue = "CMS"  # Last used Nov 22 2024 DOWNLOADED EVENTS THROUGH JAN 2025 ONLY
 
     LIVE_READ_FROM_URLS = False
 
