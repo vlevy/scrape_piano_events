@@ -7,7 +7,6 @@ from parser_common_code import (
     is_relevant_to_site_as_accompanied,
     set_start_end_fields_from_start_dt,
     set_tags_from_dict,
-    utc_to_local,
 )
 
 # Map venues in the listing to the exact venue name in the website
@@ -81,7 +80,6 @@ venue_title_map = {
 
 
 class MannesParser(EventParser):
-
     def parse_soup_to_event(self, url, soup):
         csv_dict = initialize_csv_dict(url)
         csv_dict["organizer_name"] = "Mannes College of Music"
@@ -89,7 +87,9 @@ class MannesParser(EventParser):
 
         # Venue
         try:
-            venue_from_page = str(soup.find_all("div", attrs={"class": "venue-name"})[0].contents[0])
+            venue_from_page = str(
+                soup.find_all("div", attrs={"class": "venue-name"})[0].contents[0]
+            )
         except Exception as ex:
             print("Error: Venue not found")
             return dict()
@@ -135,7 +135,9 @@ class MannesParser(EventParser):
         csv_dict["event_description"] = description
 
         # Relevant
-        relevant = is_relevant_to_site(str(description)) or is_relevant_to_site_as_accompanied(str(description))
+        relevant = is_relevant_to_site(
+            str(description)
+        ) or is_relevant_to_site_as_accompanied(str(description))
         csv_dict["relevant"] = relevant
 
         # Price

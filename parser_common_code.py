@@ -19,7 +19,7 @@ from bs4 import BeautifulSoup
 import importer_globals as G
 from basic_utils import clean_up_url
 from LocationCache import LocationCache
-from prior_urls import append_to_prior_urls_file, remove_existing_urls
+from prior_urls import remove_existing_urls
 from SeleniumLoader import SeleniumLoader
 
 MAX_PARSE_TRIES = 3
@@ -217,7 +217,6 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
             selenium_loader = SeleniumLoader(False)
             soup = selenium_loader.soup_from_url(url)
             del selenium_loader
-            selenium_loader = None
             if not soup:
                 print("Selenium loader failed")
                 continue
@@ -255,7 +254,7 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
             if i <= (G.NUM_URL_TRIES - 2):
                 print(f"Waiting before try {i + 2} of {G.NUM_URL_TRIES}")
                 sleep_random()
-                print(f"Retrying")
+                print("Retrying")
                 continue
             print("URL read failed")
             return None
@@ -528,7 +527,7 @@ def read_urls(file_name):
 
 
 def filter_event_row(csv_row):
-    if not "relevant" in csv_row:
+    if "relevant" not in csv_row:
         set_relevant_from_dict(csv_row)
 
     if not csv_row["relevant"]:
@@ -540,7 +539,7 @@ def filter_event_row(csv_row):
         and csv_row["start_timestamp"].date() < EARLIEST_DATE
     ):
         # Skip past events
-        print(f"Skipping past event")
+        print("Skipping past event")
         return None
 
     if "event_name" in csv_row:
@@ -854,7 +853,7 @@ def retrieve_upcoming_urls() -> list[str]:
 
     # Print out all connection parameters for debugging
     print(f"host: {host}, user: {user}, password: {password}, database: {database}")
-    print(f"Reading existing URLs from the database")
+    print("Reading existing URLs from the database")
     try:
         # Connect to the database
         connection = mysql.connector.connect(
@@ -886,22 +885,49 @@ def retrieve_upcoming_urls() -> list[str]:
 
 def serve_urls_from_file(file_name):
     """Return URLs from a file of URLs"""
-    new_urls = [url for url in read_urls(file_name)]
-    num_urls = len(new_urls)
+    # Read URLs from the file, skipping blank lines and lines starting with '#'
+    new_urls = [
+        url
+        for url in read_urls(file_name)
+        if url.strip() and not url.strip().startswith("#")
+    ]
+    num_urls_from_file = len(new_urls)
+    print(f"Retrieved {num_urls_from_file} URLs from {file_name}")
 
     # Retrieve URLs for upcoming events
     live_urls = retrieve_upcoming_urls()
     if live_urls:
         # Skip URLs processed previously
-        new_urls = sorted(list(set(new_urls) - set(live_urls)))
+        initial_new_urls = set(new_urls)
+        new_urls = list(initial_new_urls - set(live_urls))
+        omitted_prev_urls = initial_new_urls & set(
+            live_urls
+        )  # Intersection for omitted
+        print(
+            f"Omitted {len(omitted_prev_urls)} currently live URLs so now there are {len(new_urls)} URLs"
+        )
     else:
         print("Warning: Unable to retrieve previously scraped URLs")
 
-    new_urls = remove_existing_urls(new_urls, file_name)
-    print(f"Keeping {len(new_urls)} of {num_urls} not scraped previously")
-    for i, url in enumerate(new_urls):
-        print(f"{i+1}: {url}")
+    # Remove URLs that have been recorded in the "prev" file
+    urls_before_removal = new_urls[:]  # Make a shallow copy
+    new_urls = remove_existing_urls(urls_before_removal, file_name)
+    omitted_recorded_urls = set(urls_before_removal) - set(new_urls)  # Difference
+    if omitted_recorded_urls:
+        print(
+            f"(Additionally) omitted {len(omitted_recorded_urls)} previously recorded URLs so now there are {len(new_urls)} URLs"
+        )
+    else:
+        print("No previously recorded URLs omitted")
 
+    print(f"Keeping {len(new_urls)} of {num_urls_from_file} not scraped previously")
+
+    # Ensure that our expectations match the actual outcome
+    assert len(new_urls) == len(urls_before_removal) - len(
+        omitted_recorded_urls
+    ), "Number of remaining URLs doesn't match the expected count after removal"
+
+    # Yield remaining URLs for further processing
     for url in new_urls:
         yield len(new_urls), url
 
@@ -919,7 +945,6 @@ def write_event_rows_to_import_file(
     output_csv = None
     file_name_no_ext = os.path.splitext(upload_file_name)[0]
     file_ext = os.path.splitext(upload_file_name)[1]
-    num_rows_left = len(csv_rows)
     file_num = 0
     num_rows_written_to_file = 0
     file_name_to_open = ""
@@ -956,4 +981,3 @@ def write_event_rows_to_import_file(
             f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
         )
         output_csv.close()
-        urls = [row["event_website"] for row in csv_rows]

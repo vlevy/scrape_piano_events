@@ -21,7 +21,6 @@ from NinetySecondsStreetYParser import NinetySecondStreetYParser
 from NjPacParser import NjPacParser
 from NyplParser import NyplParser
 from parser_common_code import (
-    append_to_prior_urls_file,
     data_path,
     parse_pages_to_events,
     serve_urls_from_file,
@@ -70,18 +69,18 @@ if __name__ == "__main__":
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
     venue = "BARGEMUSIC"  # Last used Sep 14 2024
-    venue = "MANNES"  # Not used but entered manually in early Oct 2024
     venue = "KAUFMAN"  # Oct 8 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
     venue = "NJPAC"  # Last used Nov 3 2024
     venue = "MSM"  # Last used Nov 3 2024
     venue = "CARNEGIE"  # Last used Nov 6 2024
-    venue = "JUILLIARD"  # Last used Nov 15 2024
     venue = "92Y"  # Last used Nov 17 2024
-    venue = "EVENTBRITE"  # Last used Nov 17 2024
-    venue = "CMS"  # Last used Nov 22 2024 DOWNLOADED EVENTS THROUGH JAN 2025 ONLY
+    venue = "CMS"  # Last used Nov 22 2024 through spring season
+    venue = "MANNES"  # Not used but entered manually in early Dec 2024
+    venue = "EVENTBRITE"  # Last used Dec 11 2024
+    venue = "JUILLIARD"  # Last used Dec 21 2024
 
-    LIVE_READ_FROM_URLS = False
+    LIVE_READ_FROM_URLS = True
 
     @dataclass
     class VenueInfo:
@@ -91,26 +90,26 @@ if __name__ == "__main__":
 
     # Dictionary for venue configurations
     venue_configurations = {
-        "BARGEMUSIC": VenueInfo(BargemusicParser()),
-        "CARNEGIE": VenueInfo(CarnegieHallParser(), 1, 120.0),
-        "JUILLIARD": VenueInfo(JuilliardParser()),
-        "EVENTBRITE": VenueInfo(EventBriteParser_v2(), None, 1),
-        "CMS": VenueInfo(CmsParser()),
-        "LINCOLN_CENTER": VenueInfo(LincolnCenterParser(), None, 20.0),
         "92Y": VenueInfo(NinetySecondStreetYParser()),
-        "SPECTRUM": VenueInfo(SpectrumParser()),
-        "SCANDINAVIA_HOUSE": VenueInfo(ScandinaviaHouseParser()),
-        "MANNES": VenueInfo(MannesParser(), 2, 60.0),
-        "ZINC-JAZZ": VenueInfo(ZincParser()),
-        "KAUFMAN": VenueInfo(KaufmanParser()),
-        "NJPAC": VenueInfo(NjPacParser()),
-        "NATIONAL_SAWDUST": VenueInfo(NationalSawdustParser()),
-        "MSM": VenueInfo(MsmParser()),
-        "SYMPHONY_SPACE": VenueInfo(SymphonySpaceParser()),
-        "NYPL": VenueInfo(NyplParser()),
+        "BARGEMUSIC": VenueInfo(BargemusicParser()),
         "BIRDLAND": VenueInfo(BirdlandParser()),
         "BLUE_NOTE": VenueInfo(BlueNoteParser()),
+        "CARNEGIE": VenueInfo(CarnegieHallParser(), 1, 120.0),
+        "CMS": VenueInfo(CmsParser()),
+        "EVENTBRITE": VenueInfo(EventBriteParser_v2(), None, 1),
         "JAZZ_ORG": VenueInfo(JazzOrgParser()),
+        "JUILLIARD": VenueInfo(JuilliardParser()),
+        "KAUFMAN": VenueInfo(KaufmanParser()),
+        "LINCOLN_CENTER": VenueInfo(LincolnCenterParser(), None, 20.0),
+        "MANNES": VenueInfo(MannesParser(), 2, 10.0),
+        "MSM": VenueInfo(MsmParser()),
+        "NATIONAL_SAWDUST": VenueInfo(NationalSawdustParser()),
+        "NJPAC": VenueInfo(NjPacParser()),
+        "NYPL": VenueInfo(NyplParser()),
+        "SCANDINAVIA_HOUSE": VenueInfo(ScandinaviaHouseParser()),
+        "SPECTRUM": VenueInfo(SpectrumParser()),
+        "SYMPHONY_SPACE": VenueInfo(SymphonySpaceParser()),
+        "ZINC-JAZZ": VenueInfo(ZincParser()),
     }
 
     # Usage example with the dictionary
