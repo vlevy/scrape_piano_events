@@ -624,7 +624,7 @@ class EventBriteParser_v2(EventParser):
     def read_urls(url_file_name):
         """Read the event-page URLs for the first 10 pages of piano events in Manhattan"""
         urls = set()
-        for page in range(10):
+        for page in range(5):
             sleep_random()
             url_this_page = f"https://www.eventbrite.com/d/ny--new-york/piano/?mode=search&page={page+1}"
             print("Reading URL {0}".format(url_this_page))
@@ -654,7 +654,9 @@ class EventBriteParser_v2(EventParser):
 
         # Details are stored in a JSON element
         try:
-            event_json = soup.find_all("script", attrs={"type": "application/ld+json"})[1].contents[0]
+            event_json = soup.find_all("script", attrs={"type": "application/ld+json"})[
+                1
+            ].contents[0]
             # Some events have improperly encoded newlines
             event_json = event_json.replace("\t", " ")
             event_details = json.loads(event_json)
@@ -664,8 +666,16 @@ class EventBriteParser_v2(EventParser):
 
         # Don't accept any events without a location
         try:
-            latitude = float(soup.find("meta", attrs={"property": "event:location:latitude"})["content"])
-            longitude = float(soup.find("meta", attrs={"property": "event:location:longitude"})["content"])
+            latitude = float(
+                soup.find("meta", attrs={"property": "event:location:latitude"})[
+                    "content"
+                ]
+            )
+            longitude = float(
+                soup.find("meta", attrs={"property": "event:location:longitude"})[
+                    "content"
+                ]
+            )
         except Exception as ex:
             print("Listing location was not specified")
             return None
@@ -677,7 +687,9 @@ class EventBriteParser_v2(EventParser):
             start_dt = datetime.strptime(date_string, "%Y-%m-%dT%H:%M:%S")
             if not start_dt:
                 raise RuntimeError(f"Unable to find start date from {start_dt}")
-            end_dt = datetime.strptime(event_details["endDate"][:19], "%Y-%m-%dT%H:%M:%S")
+            end_dt = datetime.strptime(
+                event_details["endDate"][:19], "%Y-%m-%dT%H:%M:%S"
+            )
             if not end_dt:
                 raise RuntimeError(f"Unable to find end date from {start_dt}")
             set_start_end_fields_from_start_dt(csv_dict, start_dt, end_dt)
@@ -686,13 +698,18 @@ class EventBriteParser_v2(EventParser):
             return None
 
         try:
-            csv_dict["event_name"] = "{0} at {1}".format(event_details["name"], event_details["location"]["name"])
+            csv_dict["event_name"] = "{0} at {1}".format(
+                event_details["name"], event_details["location"]["name"]
+            )
         except KeyError as ex:
             print("Event name not found. Skipping.")
             return None
 
         venue_from_page = str(event_details["location"]["name"]).strip()
-        venue = EventBriteParser_v2.VENUES.get(venue_from_page, venue_from_page) or venue_from_page
+        venue = (
+            EventBriteParser_v2.VENUES.get(venue_from_page, venue_from_page)
+            or venue_from_page
+        )
         if venue == "skip":
             print(f'Skipping event at unwanted venue "{venue_from_page}"')
             return None
@@ -704,7 +721,10 @@ class EventBriteParser_v2(EventParser):
         free = False
         if "offers" in event_details:
             low = high = None
-            if "lowPrice" in event_details["offers"][0] and "highPrice" in event_details["offers"][0]:
+            if (
+                "lowPrice" in event_details["offers"][0]
+                and "highPrice" in event_details["offers"][0]
+            ):
                 low = event_details["offers"][0]["lowPrice"]
                 high = event_details["offers"][0]["highPrice"]
             elif "price" in event_details["offers"][0]:
@@ -714,7 +734,9 @@ class EventBriteParser_v2(EventParser):
                 if low == high:
                     csv_dict["event_cost"] = parse_price_range("${0}".format(low))
                 else:
-                    csv_dict["event_cost"] = parse_price_range("${0}-${1}".format(low, high))
+                    csv_dict["event_cost"] = parse_price_range(
+                        "${0}-${1}".format(low, high)
+                    )
                 if low == 0:
                     free = True
 
@@ -725,7 +747,10 @@ class EventBriteParser_v2(EventParser):
 
         # Event description
         try:
-            description = "\n".join(str(c) for c in soup.find("div", attrs={"class": "eds-text--left"}).contents)
+            description = "\n".join(
+                str(c)
+                for c in soup.find("div", attrs={"class": "eds-text--left"}).contents
+            )
         except Exception as ex:
             try:
                 summary = f"<strong>{event_details['description']}</strong>"
@@ -733,12 +758,16 @@ class EventBriteParser_v2(EventParser):
                 print("No description found")
                 return None
             description_paragraphs = [summary, ""]
-            description_paragraph_sections = soup.find_all("div", attrs={"class": "structured-content-rich-text"})
+            description_paragraph_sections = soup.find_all(
+                "div", attrs={"class": "structured-content-rich-text"}
+            )
             if description_paragraph_sections:
                 for section in description_paragraph_sections:
                     for i, p in enumerate(section.find_all("p")):
                         if p.contents:
-                            description_paragraphs.append("".join([str(c) for c in p.contents]))
+                            description_paragraphs.append(
+                                "".join([str(c) for c in p.contents])
+                            )
                         else:
                             description_paragraphs += ""
             else:
@@ -748,8 +777,13 @@ class EventBriteParser_v2(EventParser):
 
         csv_dict["event_description"] = description
 
-        if "organizer" in event_details and "event_description" in event_details["organizer"]:
-            csv_dict["event_description"] += "\r\n" + encode_html(event_details["organizer"]["description"])
+        if (
+            "organizer" in event_details
+            and "event_description" in event_details["organizer"]
+        ):
+            csv_dict["event_description"] += "\r\n" + encode_html(
+                event_details["organizer"]["description"]
+            )
         set_tags_from_dict(csv_dict, tags_list)
         if free:
             csv_dict["event_tags"] = ",".join((csv_dict["event_tags"], "Free"))
