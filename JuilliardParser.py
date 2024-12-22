@@ -61,6 +61,7 @@ VENUE_TRANSLATIONS = {
     "Rm 543 - Harris/Woolfson Orchestral Studio": "the Juilliard School",
     "Rosemary and Meredith Willson Theater": "the Juilliard School",
     "Saint Michael’s Church": "St. Michael’s Church",
+    "St. Paul and St. Andrew United Methodist Church": "St. Paul & St. Andrew United Methodist Church",
     "Saint Thomas Church": "Saint Thomas Church Fifth Avenue",
     "Streaming Event": None,
     "St. Bartholomew's Episcopal Church": "St. Barts Park Avenue",
