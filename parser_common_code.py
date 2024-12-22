@@ -9,6 +9,7 @@ import typing
 from http.cookiejar import CookieJar
 from pathlib import Path
 from time import sleep
+from urllib.parse import urlparse
 from urllib.request import HTTPCookieProcessor, Request, build_opener
 from urllib.robotparser import RobotFileParser
 
@@ -371,58 +372,47 @@ def manually_input_page(url: str) -> BeautifulSoup:
 
 
 def write_pages_to_soup_file(urls, page_file_path, parser):
-    """Parse all the URLs to pages and save them"""
+    """Parse all the URLs to pages and save them."""
 
-    # Loop over all of the URLs
+    # Assume all URLs belong to the same domain
     num_lines_written = 0
-    num_rows_in_contents_file = 0
     first_row = True
-    robot_parser: RobotFileParser | None = None
-    user_agent = "PIANYC-Event-Importer/1.0 Non-commercial PIANYC supports NYC piano events and culture (+https://www.pianyc.net/about/)"
+    user_agent = "PIANYC-Event-Importer/1.0 Non-commercial always links back to original (https://www.pianyc.net/about/)"
+
+    # Extract the domain and initialize RobotFileParser once
+    sample_url = next(iter(urls))[1]  # Get the first URL in the list
+    parsed_url = urlparse(sample_url)
+    domain = parsed_url.netloc
+    robots_url = f"{parsed_url.scheme}://{domain}/robots.txt"
+    print(f"Fetching robots.txt for {domain}: {robots_url}")
+
+    robot_parser = RobotFileParser(robots_url)
+    try:
+        robot_parser.read()
+    except Exception as e:
+        print(f"Error fetching robots.txt: {e}")
+        robot_parser = (
+            None  # Default to allowing crawling if robots.txt is inaccessible
+        )
 
     for i, (num_urls, url) in enumerate(urls):
-        # Remove the page file if it already exists
-        if i == 0:
-            # Check for an existing contents file
-            num_rows_in_contents_file = check_contents_file(page_file_path)
-            if num_rows_in_contents_file == -1:
-                # User quit
-                return
-
-            # Read the robots.txt file
-            robot_parser = RobotFileParser(url)
-            robot_parser.read()
-
-        if i < num_rows_in_contents_file:
-            # Skip URLs already processed
-            continue
-
         if not url.strip():
             continue
 
-        if False:
-            # Skip URLs that are disallowed by the robots.txt file
-            if not robot_parser.can_fetch(user_agent, url):
-                print(f"Skipping disallowed URL {url}")
-                continue
-
-        if False:
-            # Filter rows. Set lower limit to the number we were hung on previously.
-            stuck_on_number = 60
-            if not (stuck_on_number <= (i + 1) <= 1000):
-                continue
+        # Skip URLs that are disallowed by the robots.txt file
+        if robot_parser and not robot_parser.can_fetch(user_agent, url):
+            print(f"Disallowed URL {url}")
+            continue
 
         print(f"Processing URL {i + 1}/{num_urls}, {url}")
         if hasattr(parser, "parse_image_url"):
             image_parser = parser.parse_image_url
         else:
             image_parser = None
-        if False:
-            soup = manually_input_page(url)
-        else:
-            # Parse the HTML content with BeautifulSoup
-            soup = parse_url_to_soup(url, image_parser, not first_row)
-            first_row = False
+
+        # Parse the HTML content with BeautifulSoup
+        soup = parse_url_to_soup(url, image_parser, not first_row)
+        first_row = False
 
         if soup:
             # Allow parsers to filter out unwanted events
@@ -430,15 +420,17 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
                 soup = parser.content_filter(soup)
             if not soup:
                 continue
+
             # Open and append to the page file for each loop, so
             # we don't lose data if a website call never returns
             with open(page_file_path, "a", encoding="utf-8") as event_page_file:
                 writer = csv.writer(event_page_file)
-                if i == 0:
+                if first_row:
                     writer.writerow(("url", "soup"))
                 writer.writerow((url, soup_to_str(soup)))
                 num_lines_written += 1
 
+    print(f"Completed writing {num_lines_written} pages to {page_file_path}")
     return
 
 
