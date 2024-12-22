@@ -27,6 +27,7 @@ from parser_common_code import (
     write_event_rows_to_import_file,
     write_pages_to_soup_file,
 )
+from prior_urls import append_to_prior_urls_file
 from ScandinaviaHouseParser import ScandinaviaHouseParser
 from SpectrumParser import SpectrumParser
 from SymphonySpaceParser import SymphonySpaceParser
@@ -77,10 +78,10 @@ if __name__ == "__main__":
     venue = "92Y"  # Last used Nov 17 2024
     venue = "CMS"  # Last used Nov 22 2024 through spring season
     venue = "MANNES"  # Not used but entered manually in early Dec 2024
-    venue = "EVENTBRITE"  # Last used Dec 11 2024
     venue = "JUILLIARD"  # Last used Dec 21 2024
+    venue = "EVENTBRITE"  # Last used Dec 22 2024
 
-    LIVE_READ_FROM_URLS = True
+    LIVE_READ_FROM_URLS = False
 
     @dataclass
     class VenueInfo:
