@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 import re
 from pathlib import PurePath
 
@@ -9,6 +10,8 @@ from parser_common_code import (
     set_start_end_fields_from_start_dt,
     set_tags_from_dict,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def parse_date(str_date):
@@ -24,10 +27,11 @@ def parse_date(str_date):
 
 
 class JazzOrgParser(EventParser):
-
     def parse_image_url(self, soup) -> str:
         try:
-            image_url = [i.get("data-image") for i in soup.find_all("img") if i.get("data-image")][0]
+            image_url = [
+                i.get("data-image") for i in soup.find_all("img") if i.get("data-image")
+            ][0]
             image_file_name = re.search(".+/(.+\.jpg)$", image_url).groups()[0]
             folder = "JazzOrg"
         except Exception as ex:
@@ -56,13 +60,21 @@ class JazzOrgParser(EventParser):
         csv_dict = initialize_csv_dict(url)
 
         # Venue
-        if len(soup.find_all("a", attrs={"class": "sqs-block-image-link", "href": "/dizzys-club"})):
+        if len(
+            soup.find_all(
+                "a", attrs={"class": "sqs-block-image-link", "href": "/dizzys-club"}
+            )
+        ):
             venue = "Dizzy's Club"
         else:
             try:
-                venue = str(str(soup.find_all("h3")[0].contents).split(" • ")[1]).replace("'", "").replace("]", "")
+                venue = (
+                    str(str(soup.find_all("h3")[0].contents).split(" • ")[1])
+                    .replace("'", "")
+                    .replace("]", "")
+                )
             except Exception as ex:
-                print("Unable to parse venue")
+                logger.info("Unable to parse venue")
                 return None
         csv_dict["venue_name"] = venue
 
@@ -75,7 +87,7 @@ class JazzOrgParser(EventParser):
         try:
             set_start_end_fields_from_start_dt(csv_dict, dates[0])
         except Exception as ex:
-            print("Unable to parse dates")
+            logger.info("Unable to parse dates")
             the_date = dt.datetime(2025, 1, 1, 20, 0)
             set_start_end_fields_from_start_dt(csv_dict, the_date)
 
@@ -83,16 +95,25 @@ class JazzOrgParser(EventParser):
         try:
             page_event_name = soup.find("h2", attrs={"class": "edp-title"}).contents[0]
         except Exception as ex:
-            page_event_name = str(soup.find("h2", attrs={"data-preserve-html-node": "true"}).contents[0].strip())
+            page_event_name = str(
+                soup.find("h2", attrs={"data-preserve-html-node": "true"})
+                .contents[0]
+                .strip()
+            )
 
         event_name = f"{page_event_name} at {venue}".replace("at The", "at the")
         csv_dict["event_name"] = event_name
 
         # Description
         event_description = "\n".join(
-            [str(p.contents[0]) for p in soup.find_all("p", attrs={"class": "sqsrte-large"})]
+            [
+                str(p.contents[0])
+                for p in soup.find_all("p", attrs={"class": "sqsrte-large"})
+            ]
         )
-        event_description = event_description.replace("<strong>", "").replace("</strong>", "")
+        event_description = event_description.replace("<strong>", "").replace(
+            "</strong>", ""
+        )
         csv_dict["event_description"] = event_description
 
         # Tags

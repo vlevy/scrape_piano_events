@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 
 from EventParser import EventParser
 from parser_common_code import (
@@ -8,6 +9,8 @@ from parser_common_code import (
     set_start_end_fields_from_start_dt,
     set_tags_from_dict,
 )
+
+logger = logging.getLogger(__name__)
 
 # Map venues in the listing to the exact venue name in the website
 venue_map = {
@@ -91,7 +94,7 @@ class MannesParser(EventParser):
                 soup.find_all("div", attrs={"class": "venue-name"})[0].contents[0]
             )
         except Exception as ex:
-            print("Error: Venue not found")
+            logger.info("Error: Venue not found")
             return dict()
 
         venue_name = venue_map[venue_from_page]
@@ -123,7 +126,7 @@ class MannesParser(EventParser):
         try:
             event_datetime = dt.datetime.strptime(date_str, "%B %d %Y %I:%M%p")
         except Exception as ex:
-            print(f"Unable to parse event time from {date_str}")
+            logger.info(f"Unable to parse event time from {date_str}")
             return dict()
 
         set_start_end_fields_from_start_dt(csv_dict, event_datetime)

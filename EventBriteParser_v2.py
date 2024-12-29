@@ -1,8 +1,7 @@
 import json
-import os
+import logging
 from datetime import datetime
 from pathlib import PurePath
-from time import sleep
 
 import importer_globals as G
 from EventParser import EventParser
@@ -17,6 +16,8 @@ from parser_common_code import (
     set_tags_from_dict,
     sleep_random,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class EventBriteParser_v2(EventParser):
@@ -627,7 +628,7 @@ class EventBriteParser_v2(EventParser):
         for page in range(5):
             sleep_random()
             url_this_page = f"https://www.eventbrite.com/d/ny--new-york/piano/?mode=search&page={page+1}"
-            print("Reading URL {0}".format(url_this_page))
+            logger.info("Reading URL {0}".format(url_this_page))
 
             soup = parse_url_to_soup(url_this_page)
 
@@ -661,7 +662,9 @@ class EventBriteParser_v2(EventParser):
             event_json = event_json.replace("\t", " ")
             event_details = json.loads(event_json)
         except Exception as ex:
-            print("Unable to parse event-details JSON in {0}: {1}".format(url, ex))
+            logger.info(
+                "Unable to parse event-details JSON in {0}: {1}".format(url, ex)
+            )
             return None
 
         # Don't accept any events without a location
@@ -677,7 +680,7 @@ class EventBriteParser_v2(EventParser):
                 ]
             )
         except Exception as ex:
-            print("Listing location was not specified")
+            logger.info("Listing location was not specified")
             return None
 
         tags_list = ["EB"]
@@ -694,7 +697,7 @@ class EventBriteParser_v2(EventParser):
                 raise RuntimeError(f"Unable to find end date from {start_dt}")
             set_start_end_fields_from_start_dt(csv_dict, start_dt, end_dt)
         except KeyError as ex:
-            print(f"Unable to parse start and/or end date: {ex}")
+            logger.info(f"Unable to parse start and/or end date: {ex}")
             return None
 
         try:
@@ -702,7 +705,7 @@ class EventBriteParser_v2(EventParser):
                 event_details["name"], event_details["location"]["name"]
             )
         except KeyError as ex:
-            print("Event name not found. Skipping.")
+            logger.info("Event name not found. Skipping.")
             return None
 
         venue_from_page = str(event_details["location"]["name"]).strip()
@@ -711,7 +714,7 @@ class EventBriteParser_v2(EventParser):
             or venue_from_page
         )
         if venue == "skip":
-            print(f'Skipping event at unwanted venue "{venue_from_page}"')
+            logger.info(f'Skipping event at unwanted venue "{venue_from_page}"')
             return None
 
         csv_dict["venue_name"] = venue
@@ -755,7 +758,7 @@ class EventBriteParser_v2(EventParser):
             try:
                 summary = f"<strong>{event_details['description']}</strong>"
             except KeyError:
-                print("No description found")
+                logger.info("No description found")
                 return None
             description_paragraphs = [summary, ""]
             description_paragraph_sections = soup.find_all(
@@ -771,7 +774,7 @@ class EventBriteParser_v2(EventParser):
                         else:
                             description_paragraphs += ""
             else:
-                print("Skipping event with only event summary available")
+                logger.info("Skipping event with only event summary available")
                 return None
             description = f"<p>{'</p><p>'.join(description_paragraphs)}</p>"
 
@@ -791,7 +794,7 @@ class EventBriteParser_v2(EventParser):
         if "image" in event_details:
             csv_dict["external_image_url"] = event_details["image"]
         else:
-            print("No image URL in {0}".format(url))
+            logger.info("No image URL in {0}".format(url))
 
         # Filters
         if "at blue note" in csv_dict["event_name"].lower():
@@ -814,11 +817,11 @@ class EventBriteParser_v2(EventParser):
             return None
 
         if venue not in EventBriteParser_v2.EXISTING_VENUES:
-            print(f"Need to create venue {repr(venue)}")
+            logger.info(f"Need to create venue {repr(venue)}")
 
         # Don't accept any events outside of New York
         if not is_in_new_york(latitude, longitude, venue):
-            print("Venue is outside of New York")
+            logger.info("Venue is outside of New York")
             return None
 
         return csv_dict

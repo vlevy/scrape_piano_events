@@ -1,9 +1,12 @@
+import logging
+
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 
+logger = logging.getLogger(__name__)
 # Import undetected_chromedriver only if you're planning to use it
 try:
     import undetected_chromedriver as uc
@@ -22,7 +25,9 @@ class SeleniumLoader:
             # Setup Chrome options
             opts = Options()
             opts.add_argument("--headless")  # Uncomment if headless is needed
-            opts.add_argument("--log-level=3")  # Set log level to warning or higher severity
+            opts.add_argument(
+                "--log-level=3"
+            )  # Set log level to warning or higher severity
 
             # Initialize the Chrome Driver using webdriver-manager
             installer = ChromeDriverManager().install()
@@ -47,7 +52,7 @@ class SeleniumLoader:
                 self.driver.save_screenshot(r"c:/temp/selenium_screenshot.png")
             soup = BeautifulSoup(self.driver.page_source, "html.parser")
         except Exception as e:
-            print(f"Error loading {url}: {e}")
+            logger.info(f"Error loading {url}: {e}")
             soup = None
 
         return soup

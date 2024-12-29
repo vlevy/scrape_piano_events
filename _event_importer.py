@@ -1,3 +1,5 @@
+# Set up basic logging
+import logging
 from dataclasses import dataclass
 from typing import Any, Callable, Optional
 
@@ -33,6 +35,14 @@ from SpectrumParser import SpectrumParser
 from SymphonySpaceParser import SymphonySpaceParser
 from ZincParser import ZincParser
 
+# Set up logging with a custom formatter including the current time to the second, filename, function, and line number
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s|%(filename)s|%(funcName)s|%(lineno)d|%(message)s",
+)
+logger = logging.getLogger(__name__)
+logger.info("Starting event importer")
+
 
 def process_events(
     live_read_from_urls: bool,
@@ -42,7 +52,7 @@ def process_events(
     """Generic processor for different parsers"""
     if live_read_from_urls:
         # Read all the individual page URLs
-        print(f"Processing URL file {url_file_path}")
+        logger.info(f"Processing URL file {url_file_path}")
         if url_getter:
             urls = url_getter()
             # TODO: Write URLs to file
@@ -70,16 +80,16 @@ if __name__ == "__main__":
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
     venue = "BARGEMUSIC"  # Last used Sep 14 2024
-    venue = "KAUFMAN"  # Oct 8 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
     venue = "NJPAC"  # Last used Nov 3 2024
     venue = "MSM"  # Last used Nov 3 2024
-    venue = "CARNEGIE"  # Last used Nov 6 2024
     venue = "92Y"  # Last used Nov 17 2024
     venue = "CMS"  # Last used Nov 22 2024 through spring season
     venue = "MANNES"  # Not used but entered manually in early Dec 2024
     venue = "JUILLIARD"  # Last used Dec 21 2024
     venue = "EVENTBRITE"  # Last used Dec 22 2024
+    venue = "KAUFMAN"  # Last used Dec 28 2024
+    venue = "CARNEGIE"  # Last used Dec 28 2024
 
     LIVE_READ_FROM_URLS = False
 
@@ -156,4 +166,6 @@ if __name__ == "__main__":
     if (not LIVE_READ_FROM_URLS) and csv_rows:
         write_event_rows_to_import_file(importer_file_path, csv_rows, max_num_rows=0)
 
-    print(f"Done. {len(csv_rows or [])} events written total to {importer_file_path}.")
+    logger.info(
+        f"Done. {len(csv_rows or [])} events written total to {importer_file_path}."
+    )

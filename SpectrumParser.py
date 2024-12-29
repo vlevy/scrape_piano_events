@@ -1,13 +1,13 @@
-import json
-import os
+import logging
 import re
 from datetime import datetime
 
 from EventParser import EventParser
 
+logger = logging.getLogger(__name__)
+
 
 class SpectrumParser(EventParser):
-
     def parse_soup_to_event(self, url, soup):
         # -----------------------------------
         # Easy fields
@@ -25,7 +25,9 @@ class SpectrumParser(EventParser):
         csv_dict["event_name"] = f"{title}, at {venue}"
 
         # Entire description starts with 'Sun 16 Sep, 3:00 PM - 4:30 PM: '
-        entire_description = str(soup.find("meta", attrs={"name": "description"})["content"])
+        entire_description = str(
+            soup.find("meta", attrs={"name": "description"})["content"]
+        )
 
         match = re.match(
             "^(\(?(?P<year>20[12][0-9])(\) )?)?(?P<date>.+)\, "
@@ -33,7 +35,7 @@ class SpectrumParser(EventParser):
             entire_description,
         )
         if not match:
-            print(f'Unable to parse date and time from "{entire_description}"')
+            logger.info(f'Unable to parse date and time from "{entire_description}"')
             return None
 
         # If year is not specified in the listing, it means this year
@@ -42,8 +44,12 @@ class SpectrumParser(EventParser):
         start_time = match.group("start_time")
         end_time = match.group("end_time")
         try:
-            start_dt = datetime.strptime(f"{date_text} {start_time}", "%a %d %b %Y %I:%M %p")
-            end_dt = datetime.strptime(f"{date_text} {end_time}", "%a %d %b %Y %I:%M %p")
+            start_dt = datetime.strptime(
+                f"{date_text} {start_time}", "%a %d %b %Y %I:%M %p"
+            )
+            end_dt = datetime.strptime(
+                f"{date_text} {end_time}", "%a %d %b %Y %I:%M %p"
+            )
         except Exception as ex:
             raise
         set_start_end_fields_from_start_dt(csv_dict, start_dt, end_dt=end_dt)

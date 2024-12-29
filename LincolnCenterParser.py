@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 import re
 from pathlib import PurePath
 
@@ -13,6 +14,8 @@ from parser_common_code import (
     set_start_end_fields_from_start_dt,
     set_tags_from_dict,
 )
+
+logger = logging.getLogger(__name__)
 
 venue_translations = {
     "Alice Tully Hall": "Alice Tully Hall at Lincoln Center",
@@ -59,27 +62,31 @@ venue_translations = {
 
 
 class LincolnCenterParser(EventParser):
-
     def parse_image_url(self, soup) -> tuple[str | None, str | None, str | None]:
         try:
             # https://res.cloudinary.com/nyphil/image/upload/c_fill%2Cg_auto%2Ch_1148
             # %2Cw_1640/f_auto/q_auto/v1705947816/images/concerts-tickets/calendar/2425
             # /EA1767_LisaMarieMazzucco?_a=BAAASyBs
 
-            image_url = soup.find("img", attrs={"class": "event-header__image"})["srcset"]
-            image_file_name = re.search("/calendar/\d+/(.*)\?", image_url).groups()[0] + ".webp"
+            image_url = soup.find("img", attrs={"class": "event-header__image"})[
+                "srcset"
+            ]
+            image_file_name = (
+                re.search("/calendar/\d+/(.*)\?", image_url).groups()[0] + ".webp"
+            )
             folder = "Lincoln_Center"
         except Exception as ex:
             image_url = "https://images.lincolncenter.org/image/upload/v1666888004/oning7nr84o4ud1zidzq.jpg"
             folder = None
             image_file_name = None
-            # print('No image URL found in {0}'.format(url))
+            # logger.info('No image URL found in {0}'.format(url))
 
         return folder, image_file_name, image_url
 
     def extract_performance_dates(self, soup_full: BeautifulSoup) -> list[dt.datetime]:
-
-        soup: bs4.element.Tag | None = soup_full.find("ul", attrs={"class": "event-info__performances"})
+        soup: bs4.element.Tag | None = soup_full.find(
+            "ul", attrs={"class": "event-info__performances"}
+        )
         # Finding all <li> tags with class "performance"
         performance_items = soup.find_all("li", attrs={"class": "performance"})
 
@@ -114,7 +121,6 @@ class LincolnCenterParser(EventParser):
         return dates
 
     def extract_programs(self, soup_full: BeautifulSoup) -> list[str]:
-
         # Find all program blocks
         program_blocks = soup_full.find_all("div", class_="program-panel__program")
 
@@ -136,9 +142,10 @@ class LincolnCenterParser(EventParser):
         return programs
 
     def extract_performers(self, soup_full: BeautifulSoup) -> list[str]:
-
         # Find all performer blocks
-        performer_blocks = soup_full.find_all("div", class_="artist-accordion-block__item__header")
+        performer_blocks = soup_full.find_all(
+            "div", class_="artist-accordion-block__item__header"
+        )
 
         # Initialize a list to store performer info
         performers = []
@@ -158,13 +165,15 @@ class LincolnCenterParser(EventParser):
         return performers
 
     def extract_festival_string(self, soup_full: BeautifulSoup) -> str:
-
         # Find the span with class "event-header__festival-tag"
         festival_span = soup_full.find("span", class_="event-header__festival-tag")
 
         # Extract the text and the anchor tag
         if festival_span:
-            text_part = festival_span.get_text(strip=True, separator=" ").split("Part of")[0] + "Part of "
+            text_part = (
+                festival_span.get_text(strip=True, separator=" ").split("Part of")[0]
+                + "Part of "
+            )
             anchor_tag = festival_span.find("a")
             if anchor_tag:
                 anchor_href = anchor_tag["href"]
@@ -217,9 +226,15 @@ class LincolnCenterParser(EventParser):
         # Event description other than performers and program
         description_lines = []
         try:
-            description_lines.append(str(soup.find("div", attrs={"class": "event-header__description"}).contents[0]))
+            description_lines.append(
+                str(
+                    soup.find(
+                        "div", attrs={"class": "event-header__description"}
+                    ).contents[0]
+                )
+            )
         except Exception as ex:
-            print(f"Unable to get the description, skipping")
+            logger.info(f"Unable to get the description, skipping")
             return None
 
         # Optional festival

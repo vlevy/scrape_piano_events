@@ -1,4 +1,8 @@
+import logging
+
 import mysql.connector
+
+logger = logging.getLogger(__name__)
 
 
 class LocationCache:
@@ -30,13 +34,18 @@ class LocationCache:
         """
         try:
             self.connection = mysql.connector.connect(
-                host=self.host, user=self.user, password=self.password, database=self.database
+                host=self.host,
+                user=self.user,
+                password=self.password,
+                database=self.database,
             )
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            logger.info(f"Error: {err}")
             self.connection = None
 
-    def look_up_location(self, latitude: float, longitude: float, venue: str) -> bool | None:
+    def look_up_location(
+        self, latitude: float, longitude: float, venue: str
+    ) -> bool | None:
         """
         Looks up a location in the database by latitude and longitude.
 
@@ -48,7 +57,7 @@ class LocationCache:
             bool | None: The boolean value if a match is found, otherwise None.
         """
         if self.connection is None:
-            print("No database connection.")
+            logger.info("No database connection.")
             return None
         try:
             lat_int = int(latitude * self.FIX_POINT_FACTOR)
@@ -66,10 +75,12 @@ class LocationCache:
                 self.set_venue(latitude, longitude, venue)
             return is_in
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            logger.info(f"Error: {err}")
             return None
 
-    def store_location(self, latitude: float, longitude: float, venue: str, is_in_nyc: bool) -> None:
+    def store_location(
+        self, latitude: float, longitude: float, venue: str, is_in_nyc: bool
+    ) -> None:
         """
         Stores a location in the database with the given latitude, longitude, and boolean value.
 
@@ -80,7 +91,7 @@ class LocationCache:
             is_in_nyc (bool): The boolean value indicating whether the location is in NYC.
         """
         if self.connection is None:
-            print("No database connection.")
+            logger.info("No database connection.")
             return
         try:
             lat_int = int(latitude * self.FIX_POINT_FACTOR)
@@ -90,7 +101,7 @@ class LocationCache:
             cursor.execute(query, (lat_int, lon_int, venue[:255], is_in_nyc))
             self.connection.commit()
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            logger.info(f"Error: {err}")
 
     def remove_location(self, latitude: float, longitude: float) -> None:
         """
@@ -101,7 +112,7 @@ class LocationCache:
             longitude (float): The longitude of the location.
         """
         if self.connection is None:
-            print("No database connection.")
+            logger.info("No database connection.")
             return
         try:
             lat_int = int(latitude * self.FIX_POINT_FACTOR)
@@ -111,7 +122,7 @@ class LocationCache:
             cursor.execute(query, (lat_int, lon_int))
             self.connection.commit()
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            logger.info(f"Error: {err}")
 
     def set_venue(self, latitude: float, longitude: float, venue: str) -> None:
         """
@@ -123,7 +134,7 @@ class LocationCache:
             venue (str): The venue name or description.
         """
         if self.connection is None:
-            print("No database connection.")
+            logger.info("No database connection.")
             return
         try:
             lat_int = int(latitude * self.FIX_POINT_FACTOR)
@@ -133,7 +144,7 @@ class LocationCache:
             cursor.execute(query, (venue, lat_int, lon_int))
             self.connection.commit()
         except mysql.connector.Error as err:
-            print(f"Error: {err}")
+            logger.info(f"Error: {err}")
 
     def __del__(self) -> None:
         """

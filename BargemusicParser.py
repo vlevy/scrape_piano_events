@@ -1,3 +1,4 @@
+import logging
 import re
 from datetime import date, datetime
 
@@ -8,9 +9,10 @@ from parser_common_code import (
     set_tags_from_dict,
 )
 
+logger = logging.getLogger(__name__)
+
 
 class BargemusicParser(EventParser):
-
     @staticmethod
     def parse_soup_to_event(url, soup):
         """Parses a soup object into a dictionary whose keys are the CSV rows
@@ -22,7 +24,11 @@ class BargemusicParser(EventParser):
         # -----------------------------------
         csv_dict = initialize_csv_dict(url)
         csv_dict["venue_name"] = "Bargemusic"
-        page_event_name = str(soup.find("h1", attrs={"class": "tribe-events-single-event-title"}).contents[0])
+        page_event_name = str(
+            soup.find(
+                "h1", attrs={"class": "tribe-events-single-event-title"}
+            ).contents[0]
+        )
         page_event_name = re.sub("^.* Series: ", "", page_event_name)
         page_event_name = re.sub("^.* Festival: ", "", page_event_name)
         csv_dict["event_name"] = f"{page_event_name}, at Bargemusic"
@@ -35,7 +41,7 @@ class BargemusicParser(EventParser):
             str_div = str(div)
             # Skip duplicate lines
             if str_div == prev_div:
-                print(f"Skipping duplicated line {str_div}")
+                logger.info(f"Skipping duplicated line {str_div}")
                 continue
             prev_div = str_div
 
@@ -50,9 +56,13 @@ class BargemusicParser(EventParser):
 
         csv_dict["event_description"] = description
 
-        csv_dict["external_image_url"] = "https://www.bargemusic.org/wp-content/uploads/barge-logo.png"
+        csv_dict["external_image_url"] = (
+            "https://www.bargemusic.org/wp-content/uploads/barge-logo.png"
+        )
 
-        start_text = str(soup.find("span", attrs={"class": "tribe-event-date-start"}).contents[0])
+        start_text = str(
+            soup.find("span", attrs={"class": "tribe-event-date-start"}).contents[0]
+        )
         try:
             # 'December 16 at 4:00 pm'
             year = date.today().year
@@ -73,7 +83,7 @@ class BargemusicParser(EventParser):
         try:
             cost = re.search("Tickets: \$(\d+)", description).groups()[0]
         except Exception as ex:
-            print(f"Unable to locate price: {ex}")
+            logger.info(f"Unable to locate price: {ex}")
             cost = 0
         csv_dict["event_cost"] = cost
 

@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import datetime
 
 from EventParser import EventParser
@@ -9,6 +10,8 @@ from parser_common_code import (
     set_start_end_fields_from_start_dt,
     set_tags_from_dict,
 )
+
+logger = logging.getLogger(__name__)
 
 VENUE_TRANSLATIONS = {
     "Merkin Concert Hall": "Merkin Concert Hall at Kaufman Music Center",
@@ -29,7 +32,6 @@ COLLABORATIVE_HINTS = (
 
 
 class KaufmanParser(EventParser):
-
     @staticmethod
     def parse_soup_to_event(url, soup):
         """Parses a soup object into a dictionary whose keys are the CSV rows
@@ -42,17 +44,24 @@ class KaufmanParser(EventParser):
         # Event JSON
         event_json_list = soup.find_all("script", attrs={"type": "application/ld+json"})
         if len(event_json_list) < 1:
-            print("Skipping because no JSON script was found")
+            logger.info("Skipping because no JSON script was found")
             return None
         elif len(event_json_list) > 1:
             raise RuntimeError("Multiple JSON scripts found")
 
         event_json_str = str(event_json_list[0].contents)
-        event_json_str = event_json_str.replace("\\n", "\n").replace("\\t", " ").replace("\\r", "\n").replace("'", "")
+        event_json_str = (
+            event_json_str.replace("\\n", "\n")
+            .replace("\\t", " ")
+            .replace("\\r", "\n")
+            .replace("'", "")
+        )
         event_json_str = event_json_str.replace('"offers": \n  \n  "', '"\n  ')
 
         try:
-            event_json = json.loads(event_json_str, strict=False)  # Allows newlines in quoted strings
+            event_json = json.loads(
+                event_json_str, strict=False
+            )  # Allows newlines in quoted strings
             event_json = event_json[0]
         except Exception as ex:
             raise

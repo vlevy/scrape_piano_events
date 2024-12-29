@@ -1,3 +1,4 @@
+import logging
 import sys
 from multiprocessing import Process, Queue
 
@@ -5,6 +6,8 @@ import bs4 as bs
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QApplication
+
+logger = logging.getLogger(__name__)
 
 g_app = None
 
@@ -26,7 +29,7 @@ class Qt5WebPage(QWebEnginePage):
 
     def on_load_finished(self):
         self.toHtml(self.marshal_results)
-        print("Load finished")
+        logger.info("Load finished")
 
     def marshal_results(self, html_str):
         self.html = html_str
@@ -44,5 +47,5 @@ class Qt5RenderedSoup:
     def get_soup(self):
         page = Qt5WebPage(self.url)
         soup = bs.BeautifulSoup(page.html, "html.parser")
-        print(soup)
+        logger.info(soup)
         return soup

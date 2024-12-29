@@ -1,7 +1,10 @@
 import datetime as dt
+import logging
 import re
 
 from EventParser import EventParser
+
+logger = logging.getLogger(__name__)
 
 
 class SymphonySpaceParser(EventParser):
@@ -29,11 +32,21 @@ class SymphonySpaceParser(EventParser):
         # Contents
         try:
             description = "".join(
-                [str(p) for p in soup.find("div", attrs={"class": "entry-full-description"}).contents]
+                [
+                    str(p)
+                    for p in soup.find(
+                        "div", attrs={"class": "entry-full-description"}
+                    ).contents
+                ]
             )
         except Exception as ex:
             description = "".join(
-                [str(p) for p in soup.find("div", attrs={"class": "event-entry-short-description"}).contents]
+                [
+                    str(p)
+                    for p in soup.find(
+                        "div", attrs={"class": "event-entry-short-description"}
+                    ).contents
+                ]
             )
         csv_dict["event_description"] = description
 
@@ -45,7 +58,10 @@ class SymphonySpaceParser(EventParser):
                     [
                         int(p)
                         for p in re.findall(
-                            "\$([0-9]+)", " ".join([str(p.contents[0]) for p in price_tags if p.contents])
+                            "\$([0-9]+)",
+                            " ".join(
+                                [str(p.contents[0]) for p in price_tags if p.contents]
+                            ),
                         )
                     ]
                 )
@@ -56,7 +72,7 @@ class SymphonySpaceParser(EventParser):
                 price_str = f"{prices[0]}"
             else:
                 price_str = ""
-                print("Unable to find price")
+                logger.info("Unable to find price")
             if price_str:
                 csv_dict["event_cost"] = price_str
 
@@ -81,22 +97,27 @@ class SymphonySpaceParser(EventParser):
                     start_dt = dt.datetime.strptime(datetime_str, "%b %d, %Y | %I:%M%p")
 
                 if len(date_rows) > 1:
-                    print("RECURRING EVENT -- CHECK RECURRANCES MANUALLY")
+                    logger.info("RECURRING EVENT -- CHECK RECURRANCES MANUALLY")
                     event_tags.add("recurring")
             except Exception as ex:
                 pass
 
         if not start_dt:
-            print("Unable to parse date/time")
+            logger.info("Unable to parse date/time")
             return None
 
         set_start_end_fields_from_start_dt(csv_dict, start_dt)
 
         # Image
         try:
-            image_url = str(soup.find("img", attrs={"class": "center-block"})["src"]).split(".jpg")[0] + ".jpg"
+            image_url = (
+                str(soup.find("img", attrs={"class": "center-block"})["src"]).split(
+                    ".jpg"
+                )[0]
+                + ".jpg"
+            )
         except Exception as ex:
-            print("No image found - using default")
+            logger.info("No image found - using default")
             image_url = "https://symphonyspace.s3.amazonaws.com/images/featured-sections/Getting-Here-Patch-Image.jpg"
         csv_dict["external_image_url"] = image_url
 

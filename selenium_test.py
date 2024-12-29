@@ -1,8 +1,11 @@
+import logging
 from pathlib import PurePath
 
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+
+logger = logging.getLogger(__name__)
 
 # Instantiate options
 opts = Options()
@@ -22,4 +25,4 @@ driver.get(
 
 # Parse processed webpage with BeautifulSoup
 soup = BeautifulSoup(driver.page_source)
-print(soup.find(id="test").get_text())
+logger.info(soup.find(id="test").get_text())

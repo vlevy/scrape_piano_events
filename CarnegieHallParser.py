@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from time import sleep
 
@@ -12,6 +13,9 @@ from parser_common_code import (
 from SeleniumLoader import SeleniumLoader
 
 CARNEGIE_DEFAULT_IMAGE_URL = "https://carnegiehall.imgix.net/-/media/CarnegieHall/Images/About/Rentals/Carnegie-Hall-Exterior-at-Night-Updated-21-22.jpg"
+
+
+logger = logging.getLogger(__name__)
 
 
 def get_event_urls_from_calendar_page() -> list[str]:
@@ -53,10 +57,12 @@ def get_event_urls_from_calendar_page() -> list[str]:
         clickable_obj.click()
 
         # Extract the URL
-        event_link = driver.find_element_by_xpath('//h4[@class="ch-event-teaser__title"]/a')
+        event_link = driver.find_element_by_xpath(
+            '//h4[@class="ch-event-teaser__title"]/a'
+        )
         url = event_link.get_attribute("href")
         urls.append(url)
-        print(url)
+        logger.info(url)
 
         # Close the popup
         close_button = driver.find_element_by_xpath('//button[@class="modal__close"]')
@@ -69,7 +75,6 @@ def get_event_urls_from_calendar_page() -> list[str]:
 
 
 class CarnegieHallParser(EventParser):
-
     def parse_soup_to_event(self, url, soup):
         """Parses a soup object into a dictionary whose keys are the CSV rows
         required by the imported CSV
@@ -97,6 +102,7 @@ class CarnegieHallParser(EventParser):
             "Morgan Library & Museum": "The Morgan Library and Museum",
             "New York Hall of Science": "New York Hall of Science",
             "New York Public Library for the Performing Arts": "New York Public Library for the Performing Arts",
+            "National Opera Center, Scorca Hall": "Opera America",
             "Our Saviour's Atonement Lutheran Church": "Our Saviour's Atonement Lutheran Church",
             "Paul Hall": "Juilliard School",
             "Paul Hall, The Juilliard School": "Juilliard School",
@@ -123,14 +129,20 @@ class CarnegieHallParser(EventParser):
 
         # We will raise an error below if the venue is unknown, but only if the event is relevant
         try:
-            venue_from_page = soup.find("span", attrs={"class": "location", "itemprop": "name"}).contents[0].strip()
+            venue_from_page = (
+                soup.find("span", attrs={"class": "location", "itemprop": "name"})
+                .contents[0]
+                .strip()
+            )
         except AttributeError as ex:
-            print("Unable to find venue in event page")
+            logger.info("Unable to find venue in event page")
             return None
-        venue = csv_dict["venue_name"] = venue_translations.get(venue_from_page, venue_from_page)
+        venue = csv_dict["venue_name"] = venue_translations.get(
+            venue_from_page, venue_from_page
+        )
         if not venue:
             # Venue intentionally specified to skip, e.g., if out of town
-            print(f"Skipping event at venue {venue_from_page}")
+            logger.info(f"Skipping event at venue {venue_from_page}")
             return None
         csv_dict["venue_name"] = venue
 
@@ -155,16 +167,18 @@ class CarnegieHallParser(EventParser):
         except Exception as ex:
             # Sunday, April 29, 2018 2:30 PM
             dt = datetime.strptime(event_dt.strip(), "%A, %B  %d, %Y %I:%M %p")
-        # print("Parsed '{0}' to {1}".format(event_dt.strip(), dt))
+        # logger.info("Parsed '{0}' to {1}".format(event_dt.strip(), dt))
 
         set_start_end_fields_from_start_dt(csv_dict, dt)
 
         try:
             # https://carnegiehall.imgix.net/-/media/CarnegieHall/Images/Events/2018-2019-CH-Presents/Denis-Matsuev.jpg?w=690&h=690&fit=crop&crop=faces
-            image_url = soup.find("meta", attrs={"property": "og:image:url"})["content"].split("?")[0]
+            image_url = soup.find("meta", attrs={"property": "og:image:url"})[
+                "content"
+            ].split("?")[0]
         except Exception as ex:
             image_url = CARNEGIE_DEFAULT_IMAGE_URL
-            # print("No image URL found in {0}".format(url))
+            # logger.info("No image URL found in {0}".format(url))
         csv_dict["external_image_url"] = image_url
 
         # Performers
@@ -177,7 +191,9 @@ class CarnegieHallParser(EventParser):
                     p = str(p).replace("<br>", "").replace("<br/>", "").strip()
                     if p:
                         # Keyboardists in bold
-                        if False and any_match(("piano", "pianist", "organ", "harpsichord"), p):
+                        if False and any_match(
+                            ("piano", "pianist", "organ", "harpsichord"), p
+                        ):
                             p = f"<b>{p}</b>"
 
                         performers.append(p)
@@ -196,19 +212,25 @@ class CarnegieHallParser(EventParser):
         program_work_div = soup.find("div", attrs={"class": "ch-event-repertoires"})
         if program_work_div:
             program_works = "".join([str(d) for d in program_work_div.find_all("div")])
-            program_works = "".join([l for l in program_works.split("\n") if "<div" not in l])
+            program_works = "".join(
+                [l for l in program_works.split("\n") if "<div" not in l]
+            )
             program_works = program_works.replace("<p>", "<br/>").replace("</p>", "")
             program_section = "<strong>Program</strong>" + program_works
         else:
             program_section = ""
 
         # Description
-        description_element = soup.find("div", attrs={"class": "bigger", "itemprop": "description"})
+        description_element = soup.find(
+            "div", attrs={"class": "bigger", "itemprop": "description"}
+        )
         if description_element:
             description_rows = [str(c) for c in description_element.contents]
         else:
             description_rows = []
-        description_html = "<br />".join(performer_rows) + "<br /><br />" + "".join(description_rows)
+        description_html = (
+            "<br />".join(performer_rows) + "<br /><br />" + "".join(description_rows)
+        )
 
         body_html = description_html + "<br /><br />" + "<br />" + program_section
         csv_dict["event_description"] = body_html
@@ -242,12 +264,18 @@ class CarnegieHallParser(EventParser):
             else:
                 event_tags.append("Ensemble")
 
-        event_text = "<br />".join((csv_dict["event_name"], csv_dict["event_description"]))
+        event_text = "<br />".join(
+            (csv_dict["event_name"], csv_dict["event_description"])
+        )
         parse_event_tags(csv_dict, event_tags, event_text)
         csv_dict["event_tags"] = ",".join(event_tags)
 
         # Relevant
         relevant = set_relevant_from_dict(csv_dict, include_accompanied=False)
+        # Make events relevant if they contain specific strings
+        if "juilliard-at-zankel-hall-0730pm" in url:
+            relevant = True
+
         if relevant and not venue_from_page in venue_translations:
             raise RuntimeError(f"Unknown venue: {venue_from_page}")
 

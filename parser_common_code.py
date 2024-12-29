@@ -2,6 +2,7 @@ import codecs
 import csv
 import datetime as dt
 import html
+import logging
 import os
 import random
 import re
@@ -32,6 +33,8 @@ csv.field_size_limit(1000000)
 location_cache: LocationCache | None = None
 
 last_location_check_dt: dt.datetime | None = None
+
+logger = logging.getLogger(__name__)
 
 # Event columns in the correct order for importing.
 # UNDERSTAND THIS BEFORE CHANGING THE ORDER.
@@ -124,11 +127,11 @@ def is_in_new_york(lat: float, lon: float, venue: str):
             MIN_SECONDS_TO_WAIT_SINCE_LAST_CHECK - seconds_since_last_check
         )
         if seconds_to_wait > 0:
-            print(f"Waiting {seconds_to_wait} seconds before next check")
+            logger.info(f"Waiting {seconds_to_wait} seconds before next check")
             sleep(seconds_to_wait)
 
     try:
-        print(f"Calling service to look up location {venue}")
+        logger.info(f"Calling service to look up location {venue}")
         headers = {
             "User-Agent": "PIANYC-Event-Checker-Bot/1.0 (+https://www.pianyc.net)"
         }
@@ -137,7 +140,7 @@ def is_in_new_york(lat: float, lon: float, venue: str):
         response_json = response.json()
         last_location_check_dt = dt.datetime.now()
     except Exception as e:
-        print(f"Error getting location from {url}: {e}")
+        logger.info(f"Error getting location from {url}: {e}")
         return False
 
     # Parse the response
@@ -196,9 +199,9 @@ def sleep_random(normal_seconds: int | None = None):
             normal_seconds * 0.5, normal_seconds * 1.5, normal_seconds
         )
         if seconds_to_wait > 0:
-            print(f"Waiting {seconds_to_wait:1f} seconds before first try")
+            logger.info(f"Waiting {seconds_to_wait:1f} seconds before first try")
             sleep(seconds_to_wait)
-            print("Resuming")
+            logger.info("Resuming")
 
 
 def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
@@ -219,7 +222,7 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
             soup = selenium_loader.soup_from_url(url)
             del selenium_loader
             if not soup:
-                print("Selenium loader failed")
+                logger.info("Selenium loader failed")
                 continue
 
             if image_downloader:
@@ -243,25 +246,25 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
                             raw_image_data = image.read()
                             image.close()
                             with open(full_image_path, "wb") as saved_image_file:
-                                print(f"Saving image {full_image_path}")
+                                logger.info(f"Saving image {full_image_path}")
                                 saved_image_file.write(raw_image_data)
                         else:
-                            print(f"Image {full_image_path} already exists")
+                            logger.info(f"Image {full_image_path} already exists")
                 else:
-                    print("No image file name")
+                    logger.info("No image file name")
         except Exception as ex:
             raise
-            print(f"Unable to open URL {url}: {ex}")
+            logger.info(f"Unable to open URL {url}: {ex}")
             if i <= (G.NUM_URL_TRIES - 2):
-                print(f"Waiting before try {i + 2} of {G.NUM_URL_TRIES}")
+                logger.info(f"Waiting before try {i + 2} of {G.NUM_URL_TRIES}")
                 sleep_random()
-                print("Retrying")
+                logger.info("Retrying")
                 continue
-            print("URL read failed")
+            logger.info("URL read failed")
             return None
         else:
             if i > 0:
-                print(f"Try {i + 1} succeeded.")
+                logger.info(f"Try {i + 1} succeeded.")
             break
 
     return soup
@@ -318,15 +321,15 @@ def check_contents_file(file_name: str) -> int:
     last_url = last_row[0]
 
     # Offer three options: 1) quit 2) append to the file, or 3) overwrite the file
-    print(f"Contents file {file_name} already exists with {num_events} events.")
-    print(f"Last URL in file: {last_url}")
-    print("Options:")
-    print("1) Quit")
-    print("2) Append to the file")
-    print("3) Overwrite the file")
+    logger.info(f"Contents file {file_name} already exists with {num_events} events.")
+    logger.info(f"Last URL in file: {last_url}")
+    logger.info("Options:")
+    logger.info("1) Quit")
+    logger.info("2) Append to the file")
+    logger.info("3) Overwrite the file")
     response = input("1/2/3: ")
     if response == "1":
-        print(f"File {file_name} already exists. Quitting.")
+        logger.info(f"File {file_name} already exists. Quitting.")
         return -1
     elif response == "2":
         # Appending to file
@@ -341,7 +344,7 @@ def check_contents_file(file_name: str) -> int:
         return num_events
     elif response == "3":
         os.remove(file_name)
-        print(f"File {file_name} deleted")
+        logger.info(f"File {file_name} deleted")
         return 0
     else:
         raise RuntimeError(f"Invalid response {response}")
@@ -349,12 +352,12 @@ def check_contents_file(file_name: str) -> int:
 
 def manually_input_page(url: str) -> BeautifulSoup:
     # Print the URL to inform the user
-    print("Please paste the contents of the web page for URL:", url)
+    logger.info("Please paste the contents of the web page for URL:", url)
 
     # Capture multi-line input from the user
     # The user should paste the entire HTML content and press Enter
     content = []
-    print("Paste the contents here (end with a line containing only 'END'):")
+    logger.info("Paste the contents here (end with a line containing only 'END'):")
     while True:
         line = input()
         if line == "END":
@@ -384,13 +387,13 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
     parsed_url = urlparse(sample_url)
     domain = parsed_url.netloc
     robots_url = f"{parsed_url.scheme}://{domain}/robots.txt"
-    print(f"Fetching robots.txt for {domain}: {robots_url}")
+    logger.info(f"Fetching robots.txt for {domain}: {robots_url}")
 
     robot_parser = RobotFileParser(robots_url)
     try:
         robot_parser.read()
     except Exception as e:
-        print(f"Error fetching robots.txt: {e}")
+        logger.info(f"Error fetching robots.txt: {e}")
         robot_parser = (
             None  # Default to allowing crawling if robots.txt is inaccessible
         )
@@ -401,10 +404,10 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
 
         # Skip URLs that are disallowed by the robots.txt file
         if robot_parser and not robot_parser.can_fetch(user_agent, url):
-            print(f"Disallowed URL {url}")
+            logger.info(f"Disallowed URL {url}")
             continue
 
-        print(f"Processing URL {i + 1}/{num_urls}, {url}")
+        logger.info(f"Processing URL {i + 1}/{num_urls}, {url}")
         if hasattr(parser, "parse_image_url"):
             image_parser = parser.parse_image_url
         else:
@@ -430,7 +433,7 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
                 writer.writerow((url, soup_to_str(soup)))
                 num_lines_written += 1
 
-    print(f"Completed writing {num_lines_written} pages to {page_file_path}")
+    logger.info(f"Completed writing {num_lines_written} pages to {page_file_path}")
     return
 
 
@@ -444,6 +447,7 @@ def parse_pages_to_events(page_file_path, parser):
 
     event_rows = []
 
+    logger.info(f"Parsing pages from {page_file_path}")
     with open(page_file_path, encoding="utf-8") as event_page_file:
         csv.field_size_limit(10000000)
         csv_reader = csv.reader(event_page_file)
@@ -460,7 +464,7 @@ def parse_pages_to_events(page_file_path, parser):
 
             url, html = row
             url = url.strip()  # Remove ending newline
-            print(f"Parsing page from {url}")
+            logger.info(f"Parsing page from {url}")
             soup = BeautifulSoup(html, "html.parser")
             event_row = parser.parse_soup_to_event(url, soup)
             if not event_row:
@@ -479,7 +483,7 @@ def parse_pages_to_events(page_file_path, parser):
                     <= event_row["start_timestamp"]
                     < latest_permitted_time
                 ):
-                    print(
+                    logger.info(
                         f'Skipping event not in time window: {event_row["start_timestamp"]}'
                     )
                     continue
@@ -523,7 +527,7 @@ def filter_event_row(csv_row):
         set_relevant_from_dict(csv_row)
 
     if not csv_row["relevant"]:
-        print(f'Skipping irrelevant event "{csv_row["event_name"]}"')
+        logger.info(f'Skipping irrelevant event "{csv_row["event_name"]}"')
         return None
 
     if (
@@ -531,12 +535,12 @@ def filter_event_row(csv_row):
         and csv_row["start_timestamp"].date() < EARLIEST_DATE
     ):
         # Skip past events
-        print("Skipping past event")
+        logger.info("Skipping past event")
         return None
 
     if "event_name" in csv_row:
         if "<b>" in csv_row["event_name"]:
-            print("Filtering bold in title")
+            logger.info("Filtering bold in title")
             csv_row["event_name"] = (
                 csv_row["event_name"].replace("<b>", "").replace("</b>", "")
             )
@@ -712,8 +716,8 @@ def set_relevant_from_dict(event_dict, include_accompanied=False):
         and event_dict["start_timestamp"].date() < dt.date.today()
     ):
         # Past event
-        print(
-            f'Skipping event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}'
+        logger.info(
+            f'Skipping past event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}'
         )
         event_dict["relevant"] = False
         return False
@@ -844,8 +848,10 @@ def retrieve_upcoming_urls() -> list[str]:
     view_name = "upcoming_events_view"
 
     # Print out all connection parameters for debugging
-    print(f"host: {host}, user: {user}, password: {password}, database: {database}")
-    print("Reading existing URLs from the database")
+    logger.info(
+        f"host: {host}, user: {user}, password: {password}, database: {database}"
+    )
+    logger.info("Reading existing URLs from the database")
     try:
         # Connect to the database
         connection = mysql.connector.connect(
@@ -853,7 +859,7 @@ def retrieve_upcoming_urls() -> list[str]:
         )
         cursor = connection.cursor()
     except Exception as e:
-        print(f"Error connecting to the database: {e}")
+        logger.info(f"Error connecting to the database: {e}")
         return list()
 
     try:
@@ -861,7 +867,7 @@ def retrieve_upcoming_urls() -> list[str]:
         cursor.execute(f"SELECT event_url FROM {view_name}")
         rows = cursor.fetchall()
     except Exception as e:
-        print(f"Error querying the database: {e}")
+        logger.info(f"Error querying the database: {e}")
         return list()
     finally:
         # Close the connection
@@ -884,7 +890,7 @@ def serve_urls_from_file(file_name):
         if url.strip() and not url.strip().startswith("#")
     ]
     num_urls_from_file = len(new_urls)
-    print(f"Retrieved {num_urls_from_file} URLs from {file_name}")
+    logger.info(f"Retrieved {num_urls_from_file} URLs from {file_name}")
 
     # Retrieve URLs for upcoming events
     live_urls = retrieve_upcoming_urls()
@@ -895,24 +901,26 @@ def serve_urls_from_file(file_name):
         omitted_prev_urls = initial_new_urls & set(
             live_urls
         )  # Intersection for omitted
-        print(
+        logger.info(
             f"Omitted {len(omitted_prev_urls)} currently live URLs so now there are {len(new_urls)} URLs"
         )
     else:
-        print("Warning: Unable to retrieve previously scraped URLs")
+        logger.info("Warning: Unable to retrieve previously scraped URLs")
 
     # Remove URLs that have been recorded in the "prev" file
     urls_before_removal = new_urls[:]  # Make a shallow copy
     new_urls = remove_existing_urls(urls_before_removal, file_name)
     omitted_recorded_urls = set(urls_before_removal) - set(new_urls)  # Difference
     if omitted_recorded_urls:
-        print(
+        logger.info(
             f"(Additionally) omitted {len(omitted_recorded_urls)} previously recorded URLs so now there are {len(new_urls)} URLs"
         )
     else:
-        print("No previously recorded URLs omitted")
+        logger.info("No previously recorded URLs omitted")
 
-    print(f"Keeping {len(new_urls)} of {num_urls_from_file} not scraped previously")
+    logger.info(
+        f"Keeping {len(new_urls)} of {num_urls_from_file} not scraped previously"
+    )
 
     # Ensure that our expectations match the actual outcome
     assert len(new_urls) == len(urls_before_removal) - len(
@@ -944,7 +952,7 @@ def write_event_rows_to_import_file(
     for i, csv_row in enumerate(csv_rows):
         if (i == 0) or ((max_num_rows != 0) and (i % max_num_rows)):
             if output_csv:
-                print(
+                logger.info(
                     f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
                 )
                 output_csv.close()
@@ -969,7 +977,7 @@ def write_event_rows_to_import_file(
             num_rows_written_to_file += 1
 
     if output_csv:
-        print(
+        logger.info(
             f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
         )
         output_csv.close()

@@ -99,7 +99,7 @@ class BlueNoteParser(EventParser):
         try:
             page_event_name = str(soup.find_all("h1")[0].contents[0])
         except Exception as e:
-            print(f"Error getting event name: {e}")
+            logger.info(f"Error getting event name: {e}")
             return None
 
         page_event_name = " ".join(

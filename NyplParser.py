@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import logging
 import re
 
 from EventParser import EventParser
@@ -8,6 +9,8 @@ from parser_common_code import (
     parse_event_tags,
     set_start_end_fields_from_start_dt,
 )
+
+logger = logging.getLogger(__name__)
 
 # "None" venue translation means key is already correct
 VENUE_TRANSLATIONS = {
@@ -30,14 +33,21 @@ class NyplParser(EventParser):
         # All of the metadata is in a JSON block following the Twitter tag
         twitter_tag = soup.find("meta", attrs={"name": "twitter:site:id"})
         if not twitter_tag:
-            print("No Twitter tag")
+            logger.info("No Twitter tag")
             return None
-        json_element = twitter_tag.find_next_sibling("script", attrs={"type": "application/ld+json"})
-        json_parsed = json.loads(json_element.contents[0].replace("\t", ""), strict=False)
+        json_element = twitter_tag.find_next_sibling(
+            "script", attrs={"type": "application/ld+json"}
+        )
+        json_parsed = json.loads(
+            json_element.contents[0].replace("\t", ""), strict=False
+        )
 
         # Check for repeating -- follow up manually
         try:
-            date_times = [str(l.contents[0]) for l in soup.find("ul", attrs={"class": "program-date"}).find_all("li")]
+            date_times = [
+                str(l.contents[0])
+                for l in soup.find("ul", attrs={"class": "program-date"}).find_all("li")
+            ]
         except Exception as ex:
             # Not repeating
             pass
@@ -83,7 +93,8 @@ class NyplParser(EventParser):
                     "location" in json_parsed
                     and "address" in json_parsed["location"]
                     and "streetAddress" in json_parsed["location"]["address"]
-                    and json_parsed["location"]["address"]["streetAddress"] == "455 Fifth Avenue"
+                    and json_parsed["location"]["address"]["streetAddress"]
+                    == "455 Fifth Avenue"
                 )
                 or (
                     "address" in json_parsed
@@ -108,6 +119,8 @@ class NyplParser(EventParser):
             csv_dict["organizer_name"] = "New York Opera Forum"
 
         # Tags
-        csv_dict["event_tags"] = parse_event_tags(csv_dict, tags_list, " ".join([event_name, description]))
+        csv_dict["event_tags"] = parse_event_tags(
+            csv_dict, tags_list, " ".join([event_name, description])
+        )
 
         return csv_dict

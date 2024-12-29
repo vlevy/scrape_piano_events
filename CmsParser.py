@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import logging
 import re
 from pathlib import Path, PurePath
 
@@ -26,6 +27,8 @@ VENUE_TRANSLATIONS_FOR_VENUE = {
     "Stanley H. Kaplan Penthouse": "Stanley H. Kaplan Penthouse at Lincoln Center",
 }
 
+logger = logging.getLogger(__name__)
+
 
 class CmsParser(EventParser):
     """Parser for the Chamber Music Society of Lincoln Center"""
@@ -44,7 +47,7 @@ class CmsParser(EventParser):
             # https://res.cloudinary.com/cmslc/image/upload/c_fill,g_auto,h_500,w_750/f_auto/q_auto/v1474562258/Education%20Images/YMC_thumbnail?_a=AAAMiAI
             image_url = str(soup.find_all("source")[0]["srcset"].split(", ")[0])
         except Exception as ex:
-            print("Unable to parse image URL")
+            logger.info("Unable to parse image URL")
             return None, None, None
         image_file_name = image_url.split("/")[-1]
         image_uid = re.search(r"/q_auto/(v\d+)", image_url).group(1)
@@ -113,7 +116,7 @@ class CmsParser(EventParser):
         try:
             csv_dict["venue_name"] = VENUE_TRANSLATIONS_FOR_VENUE[venue]
         except Exception as ex:
-            print(f"No translation for venue {venue}")
+            logger.info(f"No translation for venue {venue}")
             venue = ""
 
         # Organizer

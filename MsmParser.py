@@ -1,6 +1,5 @@
 import datetime as dt
-import json
-import os
+import logging
 import re
 
 from EventParser import EventParser
@@ -12,6 +11,8 @@ from parser_common_code import (
 )
 
 COLLABORATIVE_HINTS = ("precollege-performances",)
+
+logger = logging.getLogger(__name__)
 
 
 class MsmParser(EventParser):
@@ -73,7 +74,7 @@ class MsmParser(EventParser):
             )
             csv_dict["event_description"] = full_event_text
         else:
-            print("Missing full description")
+            logger.info("Missing full description")
 
         # Price
         try:
@@ -98,7 +99,7 @@ class MsmParser(EventParser):
                 "div", attrs={"class": "imageModule_container"}
             ).contents[1]["src"]
         except AttributeError as ex:
-            print("No image URL found")
+            logger.info("No image URL found")
         else:
             csv_dict["external_image_url"] = image_url
 

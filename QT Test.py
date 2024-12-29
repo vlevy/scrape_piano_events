@@ -1,9 +1,12 @@
+import logging
 import sys
 
 import bs4 as bs
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngineWidgets import QWebEnginePage
 from PyQt5.QtWidgets import QApplication
+
+logger = logging.getLogger(__name__)
 
 
 class Page(QWebEnginePage):
@@ -17,7 +20,7 @@ class Page(QWebEnginePage):
 
     def _on_load_finished(self):
         self.html = self.toHtml(self.Callable)
-        print("Load finished")
+        logger.info("Load finished")
 
     def Callable(self, html_str):
         self.html = html_str
@@ -29,7 +32,7 @@ def main():
         "https://www.carnegiehall.org/calendar/2022/09/29/Carnegie-Halls-Opening-Night-Gala-The-Philadelphia-Orchestra-0700PM"
     )
     soup = bs.BeautifulSoup(page.html, "html.parser")
-    print(soup)
+    logger.info(soup)
 
 
 if __name__ == "__main__":

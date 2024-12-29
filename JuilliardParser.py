@@ -1,4 +1,5 @@
 import datetime as dt
+import logging
 import re
 from pathlib import PurePath
 
@@ -13,6 +14,8 @@ from parser_common_code import (
     parse_price_range,
     set_start_end_fields_from_start_dt,
 )
+
+logger = logging.getLogger(__name__)
 
 DEFAULT_JUILLIARD_IMAGE_URL = "https://www.juilliard.edu/sites/default/files/styles/wide_1920x1080/public/juilliard37_2400x1350.jpg"
 
@@ -104,7 +107,7 @@ class JuilliardParser(EventParser):
             image_url = DEFAULT_JUILLIARD_IMAGE_URL
             folder = None
             image_file_name = None
-            # print('No image URL found in {0}'.format(url))
+            # logger.info('No image URL found in {0}'.format(url))
 
         return folder, image_file_name, image_url
 
@@ -129,7 +132,7 @@ class JuilliardParser(EventParser):
                 .contents[0]
             )
         except Exception as ex:
-            print(f"Skipping {url} because event name was not found")
+            logger.info(f"Skipping {url} because event name was not found")
             return None
 
         # -----------------------------------
@@ -144,7 +147,7 @@ class JuilliardParser(EventParser):
             venue_from_page = ""
         venue = VENUE_TRANSLATIONS[venue_from_page] or venue_from_page
         if venue == "skip":
-            print(f'Skipping event at "{venue_from_page}"')
+            logger.info(f'Skipping event at "{venue_from_page}"')
             return None
         if venue.startswith("the "):
             # Strip off leading 'the'
@@ -165,7 +168,7 @@ class JuilliardParser(EventParser):
             event_dt = dt.datetime.strptime(when_start.strip(), "%Y-%m-%d %H:%M:%S")
             set_start_end_fields_from_start_dt(csv_dict, event_dt, minutes=90)
         except Exception as ex:
-            print(f"Unable to parse event start time: {ex}")
+            logger.info(f"Unable to parse event start time: {ex}")
             return None
 
         # -----------------------------------
@@ -301,7 +304,9 @@ class JuilliardParser(EventParser):
         if False:
             # Forget about pre-college non-keyboard recitals
             if is_precollege and not is_relevant_to_site(event_name_from_page):
-                print(f"Info: Non-keyboard pre-college event {event_name_from_page}")
+                logger.info(
+                    f"Info: Non-keyboard pre-college event {event_name_from_page}"
+                )
                 return None
 
         # Finalize some fields
