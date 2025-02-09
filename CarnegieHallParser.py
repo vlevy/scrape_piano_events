@@ -81,11 +81,13 @@ class CarnegieHallParser(EventParser):
         """
 
         venue_translations = {
+            "Aaron Davis Hall": "Aaron Davis Hall, City College",
             "Arthur Zankel Music Center, Helen Filene Ladd Concert Hall": "Carnegie Hall",
             "Black Box Theater, Pless Hall Annex": "Black Box Theatre",
             "BRIC House": "BRIC House",
             "Brooklyn Museum": "Brooklyn Museum",
             "Brooklyn Public Library, Central Library": "Brooklyn Central Public Library",
+            "Bronx Music Hall": None,
             "Center for Jewish History": "Center for Jewish History",
             "City Winery New York": None,
             "Danspace Project": "St. Mark’s Church-In-The-Bowery",
@@ -95,6 +97,7 @@ class CarnegieHallParser(EventParser):
             "Harlem Stage Gatehouse": "Harlem Stage Gatehouse",
             "Italian Academy for Advanced Studies in America at Columbia University": "Italian Academy for Advanced Studies, Columbia University",
             "Jackson Heights Branch Library (QL)": "Queens Library at Jackson Heights",
+            "John A. Paulson Center": None,
             "Ladd Concert Hall": None,
             "LaGuardia Performing Arts Center": "LaGuardia Performing Arts Center",
             "Louis Armstrong House Museum": "Louis Armstrong House Museum",

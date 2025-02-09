@@ -71,11 +71,9 @@ if __name__ == "__main__":
     """Main program"""
 
     venue = "SYMPHONY_SPACE"  # Last used Oct 9 2019
-    venue = "ZINC-JAZZ"  # Last used July 9 2022
-    venue = "SCANDINAVIA_HOUSE"  # Last used Aug 29 2022
+    venue = "ZINC-JAZZ"  # Website unavailable Dec 31 2024
     venue = "NATIONAL_SAWDUST"  # Last used Aug 4 2022
     venue = "BIRDLAND"  # Last used Aug 5 2022
-    venue = "JAZZ_ORG"  # Last used 2023-08-10
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
@@ -86,10 +84,12 @@ if __name__ == "__main__":
     venue = "92Y"  # Last used Nov 17 2024
     venue = "CMS"  # Last used Nov 22 2024 through spring season
     venue = "MANNES"  # Not used but entered manually in early Dec 2024
-    venue = "JUILLIARD"  # Last used Dec 21 2024
-    venue = "EVENTBRITE"  # Last used Dec 22 2024
     venue = "KAUFMAN"  # Last used Dec 28 2024
-    venue = "CARNEGIE"  # Last used Dec 28 2024
+    venue = "JAZZ_ORG"  # Checked manually Dec 30 2024
+    venue = "SCANDINAVIA_HOUSE"  # Last used Jan 11 2025
+    venue = "EVENTBRITE"  # Last used January 25 2025
+    venue = "CARNEGIE"  # Last used February 7 2025
+    venue = "JUILLIARD"  # Last used February 8 2025
 
     LIVE_READ_FROM_URLS = False
 

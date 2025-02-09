@@ -405,7 +405,7 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
         # Skip URLs that are disallowed by the robots.txt file
         if robot_parser and not robot_parser.can_fetch(user_agent, url):
             logger.info(f"Disallowed URL {url}")
-            continue
+            # continue
 
         logger.info(f"Processing URL {i + 1}/{num_urls}, {url}")
         if hasattr(parser, "parse_image_url"):
