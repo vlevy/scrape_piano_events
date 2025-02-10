@@ -484,7 +484,7 @@ def parse_pages_to_events(page_file_path, parser):
                     < latest_permitted_time
                 ):
                     logger.info(
-                        f'Skipping event not in time window: {event_row["start_timestamp"]}'
+                        f"Skipping event not in time window: {event_row['start_timestamp']}"
                     )
                     continue
 
@@ -548,7 +548,7 @@ def filter_event_row(csv_row):
         if "&amp;" in csv_row["event_name"]:
             csv_row["event_name"] = csv_row["event_name"].replace("&amp;", "&")
 
-        csv_row["event_name"] = f'IMPORT {csv_row["event_name"]}'
+        csv_row["event_name"] = f"IMPORT {csv_row['event_name']}"
 
     csv_row["event_description"] = (
         csv_row["event_description"]
@@ -717,7 +717,7 @@ def set_relevant_from_dict(event_dict, include_accompanied=False):
     ):
         # Past event
         logger.info(
-            f'Skipping past event from {event_dict["start_timestamp"].date()}: {event_dict["event_name"]}'
+            f"Skipping past event from {event_dict['start_timestamp'].date()}: {event_dict['event_name']}"
         )
         event_dict["relevant"] = False
         return False
@@ -884,52 +884,34 @@ def retrieve_upcoming_urls() -> list[str]:
 def serve_urls_from_file(file_name):
     """Return URLs from a file of URLs"""
     # Read URLs from the file, skipping blank lines and lines starting with '#'
-    new_urls = [
-        url
+    file_urls = [
+        url.strip()
         for url in read_urls(file_name)
         if url.strip() and not url.strip().startswith("#")
     ]
-    num_urls_from_file = len(new_urls)
+    num_urls_from_file = len(file_urls)
     logger.info(f"Retrieved {num_urls_from_file} URLs from {file_name}")
 
     # Retrieve URLs for upcoming events
     live_urls = retrieve_upcoming_urls()
+
     if live_urls:
-        # Skip URLs processed previously
-        initial_new_urls = set(new_urls)
-        new_urls = list(initial_new_urls - set(live_urls))
-        omitted_prev_urls = initial_new_urls & set(
-            live_urls
-        )  # Intersection for omitted
+        # Skip URLs that are currently live
+        file_url_set = set(file_urls)
+        remaining_urls = list(file_url_set - set(live_urls))
+        omitted_urls = file_url_set - set(remaining_urls)
         logger.info(
-            f"Omitted {len(omitted_prev_urls)} currently live URLs so now there are {len(new_urls)} URLs"
+            f"Omitted {len(omitted_urls)} currently live URLs so now there are {len(remaining_urls)} URLs"
         )
     else:
         logger.info("Warning: Unable to retrieve previously scraped URLs")
+        remaining_urls = file_urls
 
-    # Remove URLs that have been recorded in the "prev" file
-    urls_before_removal = new_urls[:]  # Make a shallow copy
-    new_urls = remove_existing_urls(urls_before_removal, file_name)
-    omitted_recorded_urls = set(urls_before_removal) - set(new_urls)  # Difference
-    if omitted_recorded_urls:
-        logger.info(
-            f"(Additionally) omitted {len(omitted_recorded_urls)} previously recorded URLs so now there are {len(new_urls)} URLs"
-        )
-    else:
-        logger.info("No previously recorded URLs omitted")
-
-    logger.info(
-        f"Keeping {len(new_urls)} of {num_urls_from_file} not scraped previously"
-    )
-
-    # Ensure that our expectations match the actual outcome
-    assert len(new_urls) == len(urls_before_removal) - len(
-        omitted_recorded_urls
-    ), "Number of remaining URLs doesn't match the expected count after removal"
+    del file_urls
 
     # Yield remaining URLs for further processing
-    for url in new_urls:
-        yield len(new_urls), url
+    for url in remaining_urls:
+        yield len(remaining_urls), url
 
 
 def write_event_rows_to_import_file(

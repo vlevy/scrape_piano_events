@@ -23,6 +23,7 @@ from NinetySecondsStreetYParser import NinetySecondStreetYParser
 from NjPacParser import NjPacParser
 from NyplParser import NyplParser
 from parser_common_code import (
+    check_contents_file,
     data_path,
     parse_pages_to_events,
     serve_urls_from_file,
@@ -35,11 +36,12 @@ from SpectrumParser import SpectrumParser
 from SymphonySpaceParser import SymphonySpaceParser
 from ZincParser import ZincParser
 
-# Set up logging with a custom formatter including the current time to the second, filename, function, and line number
+# Set up logging with a custom formatter including the current time to the second, severity, filename, function, and line number
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s|%(filename)s|%(funcName)s|%(lineno)d|%(message)s",
+    format="%(asctime)s|%(levelname)s|%(filename)s|%(funcName)s|%(lineno)d|%(message)s",
 )
+
 logger = logging.getLogger(__name__)
 logger.info("Starting event importer")
 
@@ -91,7 +93,7 @@ if __name__ == "__main__":
     venue = "CARNEGIE"  # Last used February 7 2025
     venue = "JUILLIARD"  # Last used February 8 2025
 
-    LIVE_READ_FROM_URLS = False
+    LIVE_READ_FROM_URLS = True
 
     @dataclass
     class VenueInfo:
@@ -133,9 +135,8 @@ if __name__ == "__main__":
         importer_file_path = data_path(f"import_events_{venue.lower()}.csv")
 
         if LIVE_READ_FROM_URLS:
-            # For a parser that has a check_contents_file method, call it to check the contents file
-            if hasattr(info.parser, "check_contents_file"):
-                info.parser.check_contents_file(csv_page_contents_file_path)
+            # Check if the contents file exists
+            check_contents_file(csv_page_contents_file_path)
 
         # Set global variables if they exist
         if info.num_url_tries is not None:
