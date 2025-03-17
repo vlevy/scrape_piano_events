@@ -840,18 +840,33 @@ def replace_pattern(original_string: str, p_original: str, p_replace: str) -> st
 
 def retrieve_upcoming_urls() -> list[str]:
     """Retrieve the URLs of the upcoming events from a MySQL database view"""
+    logger.info("Reading existing URLs from the database")
+    upcoming_urls = read_database_view("upcoming_events_view")
+    upcoming_urls = [clean_up_url(row[3]) for row in upcoming_urls]
+    return upcoming_urls
+
+
+def retrieve_venues() -> list[str]:
+    """Retrieve the venues from a MySQL database view"""
+    logger.info("Reading existing venues from the database")
+    venues = read_database_view("tribe_venues_view")
+    venues = [row[2] for row in venues]
+
+    return venues
+
+
+def read_database_view(view_name: str) -> list[str]:
+    """Read a database view into a list of strings"""
     # Reading database credentials from environment variables
     host = os.getenv("WEBSITE_DB_HOST")
     user = os.getenv("WEBSITE_DB_USER")
     password = os.getenv("WEBSITE_DB_PASSWORD")
     database = os.getenv("WEBSITE_DB_NAME")
-    view_name = "upcoming_events_view"
 
     # Print out all connection parameters for debugging
     logger.info(
         f"host: {host}, user: {user}, password: {password}, database: {database}"
     )
-    logger.info("Reading existing URLs from the database")
     try:
         # Connect to the database
         connection = mysql.connector.connect(
@@ -864,7 +879,7 @@ def retrieve_upcoming_urls() -> list[str]:
 
     try:
         # Query the database
-        cursor.execute(f"SELECT event_url FROM {view_name}")
+        cursor.execute(f"SELECT * FROM {view_name}")
         rows = cursor.fetchall()
     except Exception as e:
         logger.info(f"Error querying the database: {e}")
@@ -877,8 +892,8 @@ def retrieve_upcoming_urls() -> list[str]:
     if not rows:
         return list()
 
+    return rows
     # Return the URLs
-    return [clean_up_url(row[0]) for row in rows]
 
 
 def serve_urls_from_file(file_name):
