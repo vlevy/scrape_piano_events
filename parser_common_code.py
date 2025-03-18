@@ -21,7 +21,6 @@ from bs4 import BeautifulSoup
 import importer_globals as G
 from basic_utils import clean_up_url
 from LocationCache import LocationCache
-from prior_urls import remove_existing_urls
 from SeleniumLoader import SeleniumLoader
 
 MAX_PARSE_TRIES = 3
@@ -35,6 +34,8 @@ location_cache: LocationCache | None = None
 last_location_check_dt: dt.datetime | None = None
 
 logger = logging.getLogger(__name__)
+
+selenium_loader: SeleniumLoader | None = None
 
 # Event columns in the correct order for importing.
 # UNDERSTAND THIS BEFORE CHANGING THE ORDER.
@@ -207,9 +208,9 @@ def sleep_random(normal_seconds: int | None = None):
 def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
     """Parse a URL and return the parsed DOM object"""
 
-    # Must delay between reads for:
-    # Carnegie Hall
-    #
+    global selenium_loader
+    if selenium_loader is None:
+        selenium_loader = SeleniumLoader(False)
 
     # For sensitive websites, wait to avoid being blocked
     if wait_first_try:
@@ -218,9 +219,7 @@ def parse_url_to_soup(url, image_downloader=None, wait_first_try=True):
     soup = None
     for i in range(G.NUM_URL_TRIES):
         try:
-            selenium_loader = SeleniumLoader(False)
             soup = selenium_loader.soup_from_url(url)
-            del selenium_loader
             if not soup:
                 logger.info("Selenium loader failed")
                 continue
