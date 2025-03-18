@@ -239,7 +239,7 @@ class CarnegieHallParser(EventParser):
         csv_dict["event_description"] = body_html
 
         # Event name
-        event_name_element = soup.find("h1", attrs={"class": "ch-page-title__title"})
+        event_name_element = soup.find("h2", attrs={"class": "ch-page-title__title"})
         if event_name_element:
             # ['Evgeny Kissin, Piano', 'Emerson String Quartet']
             event_name_lines = [
@@ -254,9 +254,10 @@ class CarnegieHallParser(EventParser):
 
             event_name = f"{event_name} at {venue}"
             event_name = event_name.replace(", Piano Solo Recital", " Solo Recital")
-            csv_dict["event_name"] = event_name
         else:
             event_name = ""
+
+        csv_dict["event_name"] = event_name
 
         # Event tags
         event_tags = ["Classical"]

@@ -93,7 +93,7 @@ if __name__ == "__main__":
     venue = "EVENTBRITE"  # Last used February 28 2025
     venue = "CARNEGIE"  # Last used March 15 2025
 
-    LIVE_READ_FROM_URLS = True
+    LIVE_READ_FROM_URLS = False
 
     @dataclass
     class VenueInfo:
