@@ -144,7 +144,7 @@ class EventBriteParser_v2(EventParser):
 
     @staticmethod
     def read_urls(url_file_name):
-        """Read the event-page URLs for the first 10 pages of piano events in Manhattan"""
+        """Read the event-page URLs for the first few pages of piano events in Manhattan"""
         urls = set()
         for page in range(5):
             sleep_random()

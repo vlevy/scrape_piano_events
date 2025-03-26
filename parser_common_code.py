@@ -6,6 +6,7 @@ import logging
 import os
 import random
 import re
+import sys
 import typing
 from http.cookiejar import CookieJar
 from pathlib import Path
@@ -149,8 +150,8 @@ def is_in_new_york(lat: float, lon: float, venue: str):
     if "address" in response_json:
         if "city" in response_json["address"]:
             if response_json["address"]["city"] == "City of New York":
-                if "suburb" in response_json["address"]:
-                    if response_json["address"]["suburb"] != "Staten Island":
+                if "borough" in response_json["address"]:
+                    if response_json["address"]["borough"] != "Staten Island":
                         is_in = True
 
     # Update the cache
@@ -297,11 +298,11 @@ def any_match(needles: typing.Iterable[str], haystacks: typing.Iterable[str]):
     return False
 
 
-def check_contents_file(file_name: str) -> int:
+def check_contents_file(file_name: str) -> list[str] | None:
     """Check whether the event contents file exists"""
     if not os.path.exists(file_name):
         # File does not exist
-        return 0
+        return []
 
     # Since the file is a CSV file, open it as a CSV file and check how many lines it has
     with open(file_name, encoding="utf-8") as event_page_file:
@@ -329,7 +330,9 @@ def check_contents_file(file_name: str) -> int:
     response = input("1/2/3: ")
     if response == "1":
         logger.info(f"File {file_name} already exists. Quitting.")
-        return -1
+        # Quit the program
+        sys.exit(1)
+
     elif response == "2":
         # Appending to file
         if len(all_non_empty_rows) > len(all_rows):
@@ -340,11 +343,12 @@ def check_contents_file(file_name: str) -> int:
                 writer = csv.writer(event_page_file)
                 for row in all_non_empty_rows:
                     writer.writerow(row)
-        return num_events
+        all_urls = [row[0] for row in all_non_empty_rows]
+        return all_urls
     elif response == "3":
         os.remove(file_name)
         logger.info(f"File {file_name} deleted")
-        return 0
+        return []
     else:
         raise RuntimeError(f"Invalid response {response}")
 

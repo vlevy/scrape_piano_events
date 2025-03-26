@@ -50,8 +50,15 @@ def process_events(
     live_read_from_urls: bool,
     parser: EventParser,
     url_getter: Callable | None = None,
+    last_urls: list[str] | None = None,
 ):
-    """Generic processor for different parsers"""
+    """Generic processor for different parsers
+    Args:
+        live_read_from_urls: Whether to read the URLs' contents from their website
+        parser: The parser to use
+        url_getter: A callable that returns a list of URLs
+        last_urls: A list of URLs to skip
+    """
     if live_read_from_urls:
         # Read all the individual page URLs
         logger.info(f"Processing URL file {url_file_path}")
@@ -60,7 +67,15 @@ def process_events(
             # TODO: Write URLs to file
         else:
             urls = serve_urls_from_file(url_file_path)
-        write_pages_to_soup_file(urls, csv_page_contents_file_path, parser)
+        if last_urls:
+            new_urls = list(set(urls) - set(last_urls))
+            urls = new_urls
+            logger.info(
+                f"Skipping {len(new_urls) - len(urls)} URLs that were found in the last contents file"
+            )
+        else:
+            new_urls = urls
+        write_pages_to_soup_file(new_urls, csv_page_contents_file_path, parser)
 
         return None
     else:
@@ -90,10 +105,10 @@ if __name__ == "__main__":
     venue = "JAZZ_ORG"  # Checked manually Dec 30 2024
     venue = "SCANDINAVIA_HOUSE"  # Last used Jan 11 2025
     venue = "JUILLIARD"  # Last used February 8 2025
-    venue = "EVENTBRITE"  # Last used February 28 2025
     venue = "CARNEGIE"  # Last used March 15 2025
+    venue = "EVENTBRITE"  # Last used March 25 2025
 
-    LIVE_READ_FROM_URLS = False
+    LIVE_READ_FROM_URLS = True
 
     @dataclass
     class VenueInfo:
@@ -136,7 +151,9 @@ if __name__ == "__main__":
 
         if LIVE_READ_FROM_URLS:
             # Check if the contents file exists
-            check_contents_file(csv_page_contents_file_path)
+            last_urls = check_contents_file(csv_page_contents_file_path)
+        else:
+            last_urls = None
 
         # Set global variables if they exist
         if info.num_url_tries is not None:
@@ -153,6 +170,7 @@ if __name__ == "__main__":
         csv_rows = process_events(
             LIVE_READ_FROM_URLS,
             info.parser,
+            last_urls,
         )
 
         if csv_rows:
