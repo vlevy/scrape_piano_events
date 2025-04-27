@@ -106,9 +106,9 @@ if __name__ == "__main__":
     venue = "SCANDINAVIA_HOUSE"  # Last used Jan 11 2025
     venue = "JUILLIARD"  # Last used February 8 2025
     venue = "CARNEGIE"  # Last used March 15 2025
-    venue = "EVENTBRITE"  # Last used March 25 2025
+    venue = "EVENTBRITE"  # Last used April 17 2025
 
-    LIVE_READ_FROM_URLS = True
+    LIVE_READ_FROM_URLS = False
 
     @dataclass
     class VenueInfo:
