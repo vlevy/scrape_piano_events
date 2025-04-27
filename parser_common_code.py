@@ -23,6 +23,7 @@ import importer_globals as G
 from basic_utils import clean_up_url
 from LocationCache import LocationCache
 from SeleniumLoader import SeleniumLoader
+from suggesting import suggest_tags
 
 MAX_PARSE_TRIES = 3
 EARLIEST_DATE = dt.date(2018, 10, 25)
@@ -616,6 +617,19 @@ def set_start_end_fields_from_start_dt(csv_dict, start_dt, end_dt=None, minutes=
 
 
 def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
+    """Parse event text for event tags"""
+    tags_str = _parse_event_tags_ai(csv_dict, event_tags, event_text)
+    return tags_str
+
+
+def _parse_event_tags_ai(csv_dict: dict, event_tags: list, event_text: str) -> str:
+    """Parse event text for event tags"""
+    return ""
+
+
+def _parse_event_tags_heuristic(
+    csv_dict: dict, event_tags: list, event_text: str
+) -> str:
     """Parse event text for event tags"""
     tags = set(event_tags)
     lower_text = event_text.lower().replace("\r", " ").replace("\n", " ")
