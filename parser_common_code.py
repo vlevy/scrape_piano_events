@@ -624,7 +624,19 @@ def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
 
 def _parse_event_tags_ai(csv_dict: dict, event_tags: list, event_text: str) -> str:
     """Parse event text for event tags"""
-    return ""
+
+    event_dict = {
+        "post_title": csv_dict["event_name"],
+        "venue_name": csv_dict["venue_name"],
+        "organizer_name": csv_dict["organizer_name"],
+        "event_start_date": csv_dict["start_timestamp"],
+        "event_cost": csv_dict["event_cost"],
+        "post_content": event_text,
+    }
+    tags = suggest_tags(event_dict)
+    tags_str = ",".join([tag[0] for tag in tags])
+
+    return tags_str
 
 
 def _parse_event_tags_heuristic(
