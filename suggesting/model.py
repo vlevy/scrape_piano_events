@@ -6,8 +6,12 @@ import tarfile
 from pathlib import Path
 from typing import Dict, Tuple
 
-import torch
-from sentence_transformers import SentenceTransformer
+try:
+    import torch
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    torch = None
+    SentenceTransformer = None
 
 _MODEL: torch.nn.Module | None = None
 _ENCODER: SentenceTransformer | None = None

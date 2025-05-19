@@ -618,7 +618,7 @@ def set_start_end_fields_from_start_dt(csv_dict, start_dt, end_dt=None, minutes=
 
 def parse_event_tags(csv_dict: dict, event_tags: list, event_text: str) -> str:
     """Parse event text for event tags"""
-    tags_str = _parse_event_tags_ai(csv_dict, event_tags, event_text)
+    tags_str = _parse_event_tags_heuristic(csv_dict, event_tags, event_text)
     return tags_str
 
 
@@ -912,6 +912,7 @@ def read_database_view(view_name: str) -> list[str]:
         rows = cursor.fetchall()
     except Exception as e:
         logger.info(f"Error querying the database: {e}")
+        raise
         return list()
     finally:
         # Close the connection

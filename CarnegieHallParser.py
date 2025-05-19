@@ -80,6 +80,7 @@ class CarnegieHallParser(EventParser):
         required by the imported CSV
         """
 
+        # Set to None if the venue known and already correctly spelled
         venue_translations = {
             "Aaron Davis Hall": "Aaron Davis Hall, City College",
             "Arthur Zankel Music Center, Helen Filene Ladd Concert Hall": "Carnegie Hall",
@@ -88,6 +89,7 @@ class CarnegieHallParser(EventParser):
             "Brooklyn Museum": "Brooklyn Museum",
             "Brooklyn Public Library, Central Library": "Brooklyn Central Public Library",
             "Bronx Music Hall": None,
+            "Bryant Park": None,
             "Center for Jewish History": "Center for Jewish History",
             "City Winery New York": None,
             "Danspace Project": "St. Mark’s Church-In-The-Bowery",
@@ -121,7 +123,8 @@ class CarnegieHallParser(EventParser):
             "The Kitchen at Westbeth": "The Kitchen",
             "The Italian Academy, Columbia University": "Italian Academy for Advanced Studies, Columbia University",
             "The Plaza": None,
-            "Triad Theater": "Triad Theater",
+            "Tiffany & Co. The Landmark": "Tiffany & Co. - The Landmark",
+            "Triad Theater": None,
             "Weill Recital Hall": "Carnegie Hall",
             "YIVO Institute for Jewish Research": "YIVO Institute for Jewish Research",
             "Zankel Hall": "Carnegie Hall",
@@ -259,6 +262,30 @@ class CarnegieHallParser(EventParser):
 
         csv_dict["event_name"] = event_name
 
+        # Organizer; normalize it ─ strip the “Presented by” prefix when it’s there
+        label = soup.select_one("div.ch-page-title__label.ch-presents .label")
+        organizer_raw = label.get_text(strip=True) if label else ""
+        prefix_lower = "presented by"
+        organizer_lower = organizer_raw.lower()
+        if organizer_lower.startswith(prefix_lower):
+            organizer = organizer_raw[len(prefix_lower) :].strip()
+        else:
+            organizer = organizer_raw
+        csv_dict["organizer_name"] = organizer
+        logger.info(f"Organizer: {organizer}")
+
+        # Cost is not available in the page source
+        csv_dict["event_cost"] = ""
+
+        # Relevant
+        relevant = set_relevant_from_dict(csv_dict, include_accompanied=False)
+        # Make events relevant if they contain specific strings
+        if "juilliard-at-zankel-hall-0730pm" in url:
+            relevant = True
+
+        if relevant and not venue_from_page in venue_translations:
+            raise RuntimeError(f"Unknown venue: {venue_from_page}")
+
         # Event tags
         event_tags = ["Classical"]
         if performers:
@@ -273,17 +300,5 @@ class CarnegieHallParser(EventParser):
         )
         parse_event_tags(csv_dict, event_tags, event_text)
         csv_dict["event_tags"] = ",".join(event_tags)
-
-        # Relevant
-        relevant = set_relevant_from_dict(csv_dict, include_accompanied=False)
-        # Make events relevant if they contain specific strings
-        if "juilliard-at-zankel-hall-0730pm" in url:
-            relevant = True
-
-        if relevant and not venue_from_page in venue_translations:
-            raise RuntimeError(f"Unknown venue: {venue_from_page}")
-
-        # Price is retrieved dynamically and is not available in the page source
-        soup.find_all("div", attrs={"class": "buybutton"})
 
         return csv_dict

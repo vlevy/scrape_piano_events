@@ -1,16 +1,23 @@
 import numpy as np
-import torch
+
+try:
+    import torch
+except ImportError:
+    torch = None
 
 from .model import load_model
 
 
 def _text_from_fields(rec: dict) -> str:
     return (
-        f"[TITLE] {rec['post_title']} "
-        f"[VENUE] {rec['venue_name']} "
-        f"[ORG] {rec['organizer_name']} "
-        f"[CONTENT] {rec['post_content']}"
+        f"[CONTENT] {rec['contents']}"
+        f"[COST] {rec['cost']}"
+        f"[HOST] {rec['host']}"
+        f"[ORG] {rec['organizer']} "
+        f"[TITLE] {rec['title']} "
+        f"[VENUE] {rec['venue']} "
     )
+
 
 def suggest_tags(event: dict, top_k=5, threshold=0.25):
     model, encoder, tag_to_idx = load_model()
