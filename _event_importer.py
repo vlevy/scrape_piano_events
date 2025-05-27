@@ -107,6 +107,7 @@ if __name__ == "__main__":
     venue = "JUILLIARD"  # Last used February 8 2025
     venue = "EVENTBRITE"  # Last used April 17 2025
     venue = "CARNEGIE"  # Last used May 15 2025
+    venue = "EVENTBRITE"  # Last used May 18 2025
 
     @dataclass
     class VenueInfo:

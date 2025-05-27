@@ -28,6 +28,7 @@ class EventBriteParser_v2(EventParser):
     VENUES = {
         "468 W 143rd St": "Our Lady of Lourdes School",
         "790 11th Ave": "Klavierhaus",
+        "790 11th Avenue": "Klavierhaus",
         "Alianza Dominicana Cultural Center": None,
         "ALPHAVILLE": None,
         "Artists Space": None,
