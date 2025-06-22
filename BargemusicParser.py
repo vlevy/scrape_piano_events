@@ -31,35 +31,64 @@ class BargemusicParser(EventParser):
         )
         page_event_name = re.sub("^.* Series: ", "", page_event_name)
         page_event_name = re.sub("^.* Festival: ", "", page_event_name)
-        csv_dict["event_name"] = f"{page_event_name}, at Bargemusic"
+        page_event_name = re.sub("^\d ?pm:?. *", "", page_event_name)
 
-        # Loop through each div and concatenate them into an HTML string
-        divs = soup.find_all("div", class_="et_pb_text_inner")
-        description = ""
-        prev_div = ""
-        for div in divs:
-            str_div = str(div)
-            # Skip duplicate lines
-            if str_div == prev_div:
-                logger.info(f"Skipping duplicated line {str_div}")
-                continue
-            prev_div = str_div
+        # Convert the title to lowercase
+        page_event_name = page_event_name.lower()
 
-            # Remove the link back
-            p_to_remove = div.find("p", string="Back to concerts calendar")
-            if p_to_remove:
-                continue
-            description += str_div
-        if True:
-            description = re.sub("\<div\>(\\n)*\<\/div\>", "\n", description)
-            description = re.sub("(\\n){3,}", "\\n", description)
+        # Capitalize the first letter of every word
+        page_event_name = re.sub(r"\b\w", lambda x: x.group(0).upper(), page_event_name)
 
-        csv_dict["event_description"] = description
+        # Lowercase prepositions shorter than 4 characters after capitalization
+        page_event_name = re.sub(
+            r"\b(?:And|At|By|For|In|Of|On|Up|Via|With)\b",
+            lambda x: x.group(0).lower(),
+            page_event_name,
+        )
 
+        page_event_name = f"{page_event_name}, at Bargemusic"
+        csv_dict["event_name"] = page_event_name
+
+        # -----------------------------------
+        # Description (works on all pages)
+        # -----------------------------------
+
+        # Grab the description container that encloses the event text
+        desc_container = soup.find(
+            "div", class_="tribe-events-single-event-description"
+        )
+
+        # Remove the “Back to concerts calendar” navigation link, if present
+        for anchor in desc_container.find_all(
+            "a",
+            string=lambda s: s and "back to concerts calendar" in s.lower(),
+        ):
+            parent_p = anchor.find_parent("p")
+            (parent_p or anchor).decompose()  # remove only the navigation element
+
+        # Extract builder text blocks and keep each unique block once
+        description_parts: list[str] = []
+        seen_html: set[str] = set()
+
+        for block in desc_container.select(".et_pb_text_inner"):
+            html_block = str(block).strip()
+            if html_block and html_block not in seen_html:
+                seen_html.add(html_block)
+                description_parts.append(html_block)
+
+        # Combine parts into the final description field
+        csv_dict["event_description"] = "\n".join(description_parts)
+
+        # -----------------------------------
+        # Image
+        # -----------------------------------
         csv_dict["external_image_url"] = (
             "https://www.bargemusic.org/wp-content/uploads/barge-logo.png"
         )
 
+        # -----------------------------------
+        # Start date
+        # -----------------------------------
         start_text = str(
             soup.find("span", attrs={"class": "tribe-event-date-start"}).contents[0]
         )
@@ -79,15 +108,14 @@ class BargemusicParser(EventParser):
 
         set_start_end_fields_from_start_dt(csv_dict, start_dt)
 
+        # -----------------------------------
         # Cost
-        try:
-            cost = re.search("Tickets: \$(\d+)", description).groups()[0]
-        except Exception as ex:
-            logger.info(f"Unable to locate price: {ex}")
-            cost = 0
-        csv_dict["event_cost"] = cost
+        # -----------------------------------
+        csv_dict["event_cost"] = 0
 
-        set_tags_from_dict(csv_dict)
-        csv_dict["event_tags"] += ",Classical"
+        # -----------------------------------
+        # Tags
+        # -----------------------------------
+        set_tags_from_dict(csv_dict, ["Classical"])
 
         return csv_dict
