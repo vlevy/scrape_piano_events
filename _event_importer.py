@@ -100,13 +100,13 @@ if __name__ == "__main__":
     venue = "92Y"  # Last used Nov 17 2024
     venue = "CMS"  # Last used Nov 22 2024 through spring season
     venue = "MANNES"  # Not used but entered manually in early Dec 2024
-    venue = "KAUFMAN"  # Last used Dec 28 2024
     venue = "JAZZ_ORG"  # Checked manually Dec 30 2024
     venue = "SCANDINAVIA_HOUSE"  # Last used Jan 11 2025
     venue = "JUILLIARD"  # Last used February 8 2025
     venue = "EVENTBRITE"  # Last used June 15 2025
     venue = "CARNEGIE"  # Last used June 21 2025
     venue = "BARGEMUSIC"  # Last used June 21 2025
+    venue = "KAUFMAN"  # Last used June 22 2025
 
     LIVE_READ_FROM_URLS = False
 

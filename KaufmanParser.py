@@ -1,12 +1,12 @@
 import json
 import logging
+import re
 from datetime import datetime
 
 from EventParser import EventParser
 from parser_common_code import (
     any_match,
     initialize_csv_dict,
-    parse_url_to_soup,
     set_start_end_fields_from_start_dt,
     set_tags_from_dict,
 )
@@ -83,8 +83,9 @@ class KaufmanParser(EventParser):
         # Sunday | November 25 2018 | 6 pm
         start_dt = datetime.strptime(event_json["startDate"], "%Y-%m-%dT%H:%M")
         end_dt = datetime.strptime(
-            event_json["endDate"], "%Y-%m-%dT%H:%M"
-        )  # Unused because it's the same as start time
+            event_json["endDate"],
+            "%Y-%m-%dT%H:%M",
+        )  # Unused because it's typically the same as start time
         set_start_end_fields_from_start_dt(csv_dict, start_dt)
 
         # Event description
@@ -92,13 +93,35 @@ class KaufmanParser(EventParser):
         csv_dict["event_description"] = event_description
 
         # Price
+        price = ""
         if "offers" in event_json:
             try:
                 price = event_json["offers"]["price"]
-            except Exception as ex:
+            except Exception:
                 price = event_json["offers"][-1]["price"]
             price = price.replace("$", "")
-            csv_dict["event_cost"] = price
+
+        # Additional search for senior/student ticket pricing
+        student_senior_price = None
+        price_info_elements = soup.find_all(
+            string=re.compile(r"senior and student", re.I)
+        )
+        for elem in price_info_elements:
+            match = re.search(r"\$(\d+)", elem)
+            if match:
+                student_senior_price = match.group(1)
+                break
+
+        # Combine prices if student/senior price found
+        if student_senior_price:
+            combined_price = f"{student_senior_price}-{price}"
+        elif student_senior_price:
+            combined_price = student_senior_price
+        else:
+            combined_price = price
+
+        if combined_price:
+            csv_dict["event_cost"] = combined_price
 
         # Image
         csv_dict["external_image_url"] = event_json["image"]
