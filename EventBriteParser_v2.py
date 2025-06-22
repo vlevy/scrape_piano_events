@@ -95,6 +95,7 @@ class EventBriteParser_v2(EventParser):
         "Quantum Brooklyn": None,
         "Rainbow Room": None,
         "Redeemer Episcopal Church": "The Church of the Redeemer in Astoria",
+        "Resnick Education Wing": "Carnegie Hall",
         "Roulette Intermedium": None,
         "Saint John's In the Village": "St. John's in the Village Episcopal Church",
         "Saint Peter's Church": "Saint Peter's Church",

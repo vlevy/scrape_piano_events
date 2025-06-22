@@ -94,7 +94,6 @@ if __name__ == "__main__":
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
-    venue = "BARGEMUSIC"  # Last used Sep 14 2024
     venue = "BLUE_NOTE"  # Last used October 2024-10-27
     venue = "NJPAC"  # Last used Nov 3 2024
     venue = "MSM"  # Last used Nov 3 2024
@@ -105,9 +104,11 @@ if __name__ == "__main__":
     venue = "JAZZ_ORG"  # Checked manually Dec 30 2024
     venue = "SCANDINAVIA_HOUSE"  # Last used Jan 11 2025
     venue = "JUILLIARD"  # Last used February 8 2025
-    venue = "EVENTBRITE"  # Last used April 17 2025
-    venue = "CARNEGIE"  # Last used May 15 2025
-    venue = "EVENTBRITE"  # Last used May 18 2025
+    venue = "EVENTBRITE"  # Last used June 15 2025
+    venue = "CARNEGIE"  # Last used June 21 2025
+    venue = "BARGEMUSIC"  # Last used June 21 2025
+
+    LIVE_READ_FROM_URLS = False
 
     @dataclass
     class VenueInfo:
@@ -138,8 +139,6 @@ if __name__ == "__main__":
         "SYMPHONY_SPACE": VenueInfo(SymphonySpaceParser()),
         "ZINC-JAZZ": VenueInfo(ZincParser()),
     }
-
-    LIVE_READ_FROM_URLS = False
 
     # Usage example with the dictionary
     if venue in venue_configurations:
