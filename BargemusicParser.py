@@ -7,6 +7,7 @@ from parser_common_code import (
     initialize_csv_dict,
     set_start_end_fields_from_start_dt,
     set_tags_from_dict,
+    title_caps,
 )
 
 logger = logging.getLogger(__name__)
@@ -40,11 +41,7 @@ class BargemusicParser(EventParser):
         page_event_name = re.sub(r"\b\w", lambda x: x.group(0).upper(), page_event_name)
 
         # Lowercase prepositions shorter than 4 characters after capitalization
-        page_event_name = re.sub(
-            r"\b(?:And|At|By|For|In|Of|On|Up|Via|With)\b",
-            lambda x: x.group(0).lower(),
-            page_event_name,
-        )
+        page_event_name = title_caps(page_event_name)
 
         page_event_name = f"{page_event_name}, at Bargemusic"
         csv_dict["event_name"] = page_event_name

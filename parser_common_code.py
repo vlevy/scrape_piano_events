@@ -955,7 +955,7 @@ def serve_urls_from_file(file_name):
     del file_urls
 
     # Yield remaining URLs for further processing
-    for url in remaining_urls:
+    for url in sorted(remaining_urls):
         yield len(remaining_urls), url
 
 
@@ -967,8 +967,10 @@ def write_event_rows_to_import_file(
     """
 
     # Sort the rows by the date in the start_timestamp field
-    csv_rows = sorted(csv_rows, key=lambda x: x["start_timestamp"])
-
+    csv_rows = sorted(
+        csv_rows,
+        key=lambda x: x.get("start_timestamp", dt.datetime.now().replace(year=1900)),
+    )
     output_csv = None
     file_name_no_ext = os.path.splitext(upload_file_name)[0]
     file_ext = os.path.splitext(upload_file_name)[1]
@@ -1008,3 +1010,18 @@ def write_event_rows_to_import_file(
             f"Wrote {num_rows_written_to_file} events to CSV file {file_name_to_open}"
         )
         output_csv.close()
+
+
+def title_caps(text: str) -> str:
+    """Convert a string to title case, except for certain words that should be lowercase"""
+    # Capitalize the first letter of each word
+    text = re.sub(r"\b\w", lambda x: x.group(0).upper(), text)
+
+    # Convert some words to lowercase
+    text = re.sub(
+        r"\b(?:And|At|By|For|In|Of|On|Up|Via|With)\b",
+        lambda x: x.group(0).lower(),
+        text,
+    )
+
+    return text
