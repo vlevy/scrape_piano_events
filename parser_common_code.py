@@ -325,16 +325,16 @@ def check_contents_file(file_name: str) -> list[str] | None:
     logger.info(f"Contents file {file_name} already exists with {num_events} events.")
     logger.info(f"Last URL in file: {last_url}")
     logger.info("Options:")
-    logger.info("1) Quit")
-    logger.info("2) Append to the file")
-    logger.info("3) Overwrite the file")
-    response = input("1/2/3: ")
-    if response == "1":
+    logger.info("q) Quit")
+    logger.info("a) Append to the file")
+    logger.info("o) Overwrite the file")
+    response = input("q/a/o: ")
+    if response == "q":
         logger.info(f"File {file_name} already exists. Quitting.")
         # Quit the program
         sys.exit(1)
 
-    elif response == "2":
+    elif response == "a":
         # Appending to file
         if len(all_non_empty_rows) > len(all_rows):
             # To remove any empty rows at the end of the file, write all non-empty rows back to the file
@@ -346,7 +346,7 @@ def check_contents_file(file_name: str) -> list[str] | None:
                     writer.writerow(row)
         all_urls = [row[0] for row in all_non_empty_rows]
         return all_urls
-    elif response == "3":
+    elif response == "o":
         os.remove(file_name)
         logger.info(f"File {file_name} deleted")
         return []
