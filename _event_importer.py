@@ -90,11 +90,9 @@ if __name__ == "__main__":
     venue = "SYMPHONY_SPACE"  # Last used Oct 9 2019
     venue = "ZINC-JAZZ"  # Website unavailable Dec 31 2024
     venue = "NATIONAL_SAWDUST"  # Last used Aug 4 2022
-    venue = "BIRDLAND"  # Last used Aug 5 2022
     venue = "NYPL"  # Last used Sept 1 2024. You have to extract the event URLs manually because the listing page
     # makes it impossible to automate.
     venue = "LINCOLN_CENTER"  # Last import 2024-09-02
-    venue = "BLUE_NOTE"  # Last used October 2024-10-27
     venue = "MSM"  # Last used Nov 3 2024
     venue = "MANNES"  # Not used but entered manually in early Dec 2024
     venue = "JAZZ_ORG"  # Checked manually Dec 30 2024
@@ -107,6 +105,8 @@ if __name__ == "__main__":
     venue = "92Y"  # Last used June 22 2025
     venue = "CMS"  # Last used June 25 2025 summer season
     venue = "NJPAC"  # Last used June 26 2025
+    venue = "BLUE_NOTE"  # Last used October 2024-10-27
+    venue = "BIRDLAND"  # Last used July 4 2025
 
     LIVE_READ_FROM_URLS = False
 
@@ -170,6 +170,7 @@ if __name__ == "__main__":
         csv_rows = process_events(
             LIVE_READ_FROM_URLS,
             info.parser,
+            None,
             last_urls,
         )
 

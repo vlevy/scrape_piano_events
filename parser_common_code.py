@@ -386,25 +386,37 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
     first_row = True
     user_agent = "PIANYC-Event-Importer/1.0 Non-commercial always links back to original (https://www.pianyc.net/about/)"
 
-    # Extract the domain and initialize RobotFileParser once
-    sample_url = next(iter(urls))[1]  # Get the first URL in the list
-    parsed_url = urlparse(sample_url)
-    domain = parsed_url.netloc
-    robots_url = f"{parsed_url.scheme}://{domain}/robots.txt"
-    logger.info(f"Fetching robots.txt for {domain}: {robots_url}")
+    if hasattr(parser, "parse_image_url"):
+        image_parser = parser.parse_image_url
+    else:
+        image_parser = None
 
-    robot_parser = RobotFileParser(robots_url)
-    try:
-        robot_parser.read()
-    except Exception as e:
-        logger.info(f"Error fetching robots.txt: {e}")
-        robot_parser = (
-            None  # Default to allowing crawling if robots.txt is inaccessible
-        )
+    # Temporary list to aid debugging
+    urls_temp: list[tuple[int, str]] = []
+    for i, (num_urls, url) in enumerate(urls):
+        urls_temp.append((num_urls, url))
+    urls = urls_temp
 
+    robot_parser = None
     for i, (num_urls, url) in enumerate(urls):
         if not url.strip():
             continue
+
+        if robot_parser is None:
+            # Extract the domain and initialize RobotFileParser once
+            parsed_url = urlparse(url)
+            domain = parsed_url.netloc
+            robots_url = f"{parsed_url.scheme}://{domain}/robots.txt"
+            logger.info(f"Fetching robots.txt for {domain}: {robots_url}")
+
+            robot_parser = RobotFileParser(robots_url)
+            try:
+                robot_parser.read()
+            except Exception as e:
+                logger.info(f"Error fetching robots.txt: {e}")
+                robot_parser = (
+                    None  # Default to allowing crawling if robots.txt is inaccessible
+                )
 
         # Skip URLs that are disallowed by the robots.txt file
         if robot_parser and not robot_parser.can_fetch(user_agent, url):
@@ -412,10 +424,6 @@ def write_pages_to_soup_file(urls, page_file_path, parser):
             # continue
 
         logger.info(f"Processing URL {i + 1}/{num_urls}, {url}")
-        if hasattr(parser, "parse_image_url"):
-            image_parser = parser.parse_image_url
-        else:
-            image_parser = None
 
         # Parse the HTML content with BeautifulSoup
         soup = parse_url_to_soup(url, image_parser, not first_row)
@@ -451,14 +459,24 @@ def parse_pages_to_events(page_file_path, parser):
 
     event_rows = []
 
+    # Read through the file and count the number of rows, accounting for the header row
+    num_rows = 0
+    with open(page_file_path, encoding="utf-8") as event_page_file:
+        csv.field_size_limit(10000000)
+        csv_reader = csv.reader(event_page_file)
+        for loop, row in enumerate(csv_reader):
+            if not row:
+                continue
+            num_rows += 1
+
+    logger.info(f"Found {num_rows} rows in {page_file_path}")
+
+    # Read through the file and parse the pages
     logger.info(f"Parsing pages from {page_file_path}")
     with open(page_file_path, encoding="utf-8") as event_page_file:
         csv.field_size_limit(10000000)
         csv_reader = csv.reader(event_page_file)
         for loop, row in enumerate(csv_reader):
-            if loop == 0:
-                # Skip header row
-                continue
             if not row:
                 continue
 
@@ -948,6 +966,16 @@ def serve_urls_from_file(file_name):
         logger.info(
             f"Omitted {len(omitted_urls)} currently live URLs so now there are {len(remaining_urls)} URLs"
         )
+
+        # Also omit URLs where the live version starts with the file version
+        num_remaining_urls = len(remaining_urls)
+        remaining_urls = [
+            url for url in remaining_urls if not url.startswith(file_urls[0])
+        ]
+        logger.info(
+            f"Omitted {num_remaining_urls - len(remaining_urls)} URLs where the live version starts with the file version"
+        )
+
     else:
         logger.info("Warning: Unable to retrieve previously scraped URLs")
         remaining_urls = file_urls
